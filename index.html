@@ -1,0 +1,353 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>BLOCKLAND – Build. Play. Explore.</title>
+<link rel="stylesheet" href="style.css"></head><body>
+<div id="top"><div class="bar">
+<a class="logo" href="#home"><i>BLOCK</i>LAND</a>
+<div class="nav" id="nav"></div><div class="sp"></div>
+<input id="q" type="search" placeholder="Search games"><button class="btn" id="qb">Search</button>
+</div></div>
+<div id="sub"><div class="bar"><span id="acct">Not logged in</span><div class="sp"></div><span>Notifications: 0</span></div></div>
+<div id="page"></div>
+<footer>BLOCKLAND is an original project inspired by early-2010s block-building sites. Not affiliated with any other company.</footer>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
+<script>
+const $=s=>document.querySelector(s);
+const CATS=["Obby","Baseplate","Survival","Racing","Building","Combat"];
+const GAMES=[
+{id:"classic-obby",t:"Classic Obby",by:"BlockTeam",c:"Obby",d:"Hop across colorful floating platforms to reach the finish.",sky:"#87ceeb",g:"#5a9",bl:["#e33","#fc0","#3b3","#39f"],date:5,play:true},
+{id:"classic-baseplate",t:"Classic Baseplate",by:"BlockTeam",c:"Baseplate",d:"A big green baseplate. Run, jump and explore with your character.",sky:"#87ceeb",g:"#4a4",bl:["#c33","#36c","#fc0"],date:4,play:true},
+{id:"natural-disaster-survival",t:"Natural Disaster Survival",by:"BlockTeam",c:"Survival",d:"Survive random disasters on a small map.",sky:"#9ab",g:"#684",bl:["#963","#777","#c52"],date:3,play:true,how:"Survive each round: climb the tower when the flood rises and dodge falling meteors."},
+{id:"classic-racing",t:"Classic Racing",by:"BlockTeam",c:"Racing",d:"Race blocky cars around the track.",sky:"#8cf",g:"#555",bl:["#d22","#eee","#22d"],date:2,play:true,how:"W/S throttle and brake, A/D steer. Pass every checkpoint to finish 3 laps."},
+{id:"sandbox-building",t:"Sandbox Building",by:"BlockTeam",c:"Building",d:"Place blocks and build whatever you like.",sky:"#acf",g:"#6b5",bl:["#fa0","#a4f","#4cc","#f66"],date:1,play:true,how:"E places a block, Q removes one, 1-5 pick colors. Builds save automatically in this browser."},
+{id:"classic-sword-fight",t:"Classic Sword Fight",by:"BlockTeam",c:"Combat",d:"Duel in a small arena with blocky swords.",sky:"#c96",g:"#a85",bl:["#999","#c33","#ccc"],date:6,play:true,how:"Click or press F to swing; aim with the camera. Offline practice against 3 AI bots, not other players."}];
+const thumb=g=>`<div class="th" style="background:linear-gradient(${g.sky},#fff);--g:${g.g}"><b></b>${g.bl.map((c,i)=>`<u style="--c:${c};left:${12+i*24}%;width:${14+(i%2)*6}%;height:${14+(i*9)%22}%"></u>`).join("")}</div>`;
+const card=(g,big)=>`<a class="card ${big?'big':''}" href="#game-${g.id}">${thumb(g)}<div class="t">${g.t}</div><small>By ${g.by}</small><small>0 playing</small></a>`;
+const section=(title,list,link)=>`<div class="box"><h2>${link?`<a href="#games">See all</a>`:""}${title}</h2><div class="in grid">${list.map(g=>card(g)).join("")}</div></div>`;
+
+// ---------- avatar ----------
+const av={head:"#f5cd30",torso:"#0d69ac",arms:"#f5cd30",legs:"#a2c429",face:"smile",hat:"none"};
+const FACES=["smile","grin","shocked","wink"];
+function faceTex(kind){const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d");x.fillStyle=av.head;x.fillRect(0,0,64,64);x.fillStyle="#000";
+ if(kind=="wink"){x.fillRect(16,18,8,12);x.fillRect(40,24,10,3)}else{x.fillRect(16,18,8,12);x.fillRect(40,18,8,12)}
+ x.lineWidth=4;x.strokeStyle="#000";x.beginPath();
+ if(kind=="shocked")x.arc(32,46,6,0,7);else if(kind=="grin"){x.fillRect(16,40,32,10);x.fillStyle="#fff";x.fillRect(20,40,24,4)}else x.arc(32,36,13,.2,Math.PI-.2);
+ x.stroke();const t=new THREE.CanvasTexture(c);return t}
+const mat=c=>new THREE.MeshLambertMaterial({color:c});
+function buildChar(){
+ const G=new THREE.Group(),P={};
+ const box=(w,h,d,col)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(col));
+ const part=(k,w,h,d,col,px,py,off)=>{const p=new THREE.Group();p.position.set(px,py,0);const m=box(w,h,d,col);m.position.y=off;p.add(m);G.add(p);P[k]=p;return m};
+ const hm=part("head",2,1,1,av.head,0,4,.5);
+ const tex=faceTex(av.face);hm.material=[0,1,2,3,4,5].map(i=>i==4?new THREE.MeshLambertMaterial({map:tex}):mat(av.head));
+ part("torso",2,2,1,av.torso,0,2,1);
+ part("la",1,2,1,av.arms,-1.5,4,-1);part("ra",1,2,1,av.arms,1.5,4,-1);
+ part("ll",1,2,1,av.legs,-.5,2,-1);part("rl",1,2,1,av.legs,.5,2,-1);
+ if(av.hat=="cap"){const h=box(2.2,.5,2.2,"#c22");h.position.y=1.05;P.head.add(h)}
+ if(av.hat=="top"){const h=box(1.3,1.4,1.3,"#222");h.position.y=1.5;P.head.add(h)}
+ G.traverse(o=>{if(o.isMesh)o.castShadow=true});
+ G.userData.P=P;return G}
+function animate(ch,t,state,spd){const P=ch.userData.P,s=Math.sin(t*(state=="run"?13:8)),a=state=="run"?.9:.6;
+ let la=0,ra=0,ll=0,rl=0,lz=0,rz=0;
+ if(state=="walk"||state=="run"){la=s*a;ra=-s*a;ll=-s*a;rl=s*a}
+ else if(state=="jump"){la=ra=Math.PI*.8;ll=.2;rl=-.2;lz=-.2;rz=.2}
+ else if(state=="fall"){la=ra=Math.PI*.9+Math.sin(t*20)*.15;ll=.4;rl=-.4;lz=-.3;rz=.3}
+ else{const b=Math.sin(t*2)*.04;la=b;ra=-b;lz=-.03;rz=.03}
+ P.la.rotation.set(la,0,lz);P.ra.rotation.set(ra,0,rz);P.ll.rotation.x=ll;P.rl.rotation.x=rl}
+
+// ---------- engine ----------
+let stop=null;const GFX={low:{pr:.75,sh:0},med:{pr:1,sh:1},high:{pr:Math.min(devicePixelRatio,2),sh:1}};
+let gfx=(navigator.hardwareConcurrency||4)<=2?"low":"med";try{gfx=localStorage.getItem("bl-gfx")||gfx}catch(e){}
+function startScene(box,play,world){
+ const W=()=>box.clientWidth,H=()=>box.clientHeight;
+ try{localStorage.setItem("bl-gfx",gfx)}catch(e){}const r=new THREE.WebGLRenderer({antialias:gfx!="low"});r.setPixelRatio(GFX[gfx].pr);r.setSize(W(),H());
+ r.shadowMap.enabled=!!GFX[gfx].sh;box.appendChild(r.domElement);
+ const sc=new THREE.Scene();sc.background=new THREE.Color(world?world.sky:"#cfe6f7");
+ if(play)sc.fog=new THREE.Fog(world.sky,80,260);
+ const cam=new THREE.PerspectiveCamera(65,W()/H(),.1,400);
+ sc.add(new THREE.AmbientLight(0xffffff,.65));
+ const sun=new THREE.DirectionalLight(0xffffff,.6);sun.position.set(30,60,20);sun.castShadow=!!GFX[gfx].sh;
+ Object.assign(sun.shadow.camera,{left:-40,right:40,top:40,bottom:-40});sc.add(sun);
+ const solids=[];
+ const addBox=(x,y,z,w,h,d,col)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(col));m.position.set(x,y,z);m.receiveShadow=m.castShadow=true;sc.add(m);const s={m,w,h,d,x1:x-w/2,x2:x+w/2,y1:y-h/2,y2:y+h/2,z1:z-d/2,z2:z+d/2};solids.push(s);return s};
+ let spawn=new THREE.Vector3(0,2,0),zones=[],movers=[],placed=[],note="",won=false,SP=[[0,5,0],[16,5,16],[-16,5,-16]];const ob=play&&world.id=="classic-obby",race=play&&world.id=="classic-racing",surv=play&&world.id=="natural-disaster-survival",sw=play&&world.id=="classic-sword-fight",sand=play&&world.id=="sandbox-building",cust=play&&!!world.map,own=ob||race||surv||sw||cust,nog=ob||surv,S={ph:"wait",tm:6,alive:true,dis:0,mets:[],wl:-5,wm:null,msg:""},car={v:0,m:null},R={lap:0,nxt:0,t:0,done:false},B=[],Pl={k:0,d:0,hp:100,sw:0};
+ if(play){if(!nog){const g=new THREE.Mesh(new THREE.BoxGeometry(400,2,400),mat(world.g));g.position.y=-1;g.receiveShadow=true;sc.add(g)}
+  const cs=["#c33","#36c","#fc0","#3a3","#a4c"];
+  (own?[]:[[10,3,-12,8,6,8],[-14,1.5,-8,6,3,6],[0,1,-24,12,2,6],[18,5,10,6,10,6],[-8,.75,12,4,1.5,4],[-4,2,16,4,4,4],[0,3.5,20,4,7,4]]).forEach((b,i)=>addBox(...b,cs[i%5]));
+  for(let i=0;i<(own?0:5);i++)addBox(-24+i*3,.5+i,-24,3,1+i,3,cs[i]);
+  if(ob)buildObby();else if(surv)buildSurv();else if(race)buildRace();else if(sw)buildArena();else if(cust)buildCustom();else buildBase();}
+ const ch=buildChar();sc.add(ch);ch.position.set(0,0,0);
+ const PC=["#e33","#fc0","#3b3","#39f","#fff"];let col=0;
+ function zn(t,x,y,z,w,h,d,sp){zones.push({t,sp,x1:x-w/2,x2:x+w/2,y1:y-h/2,y2:y+h/2,z1:z-d/2,z2:z+d/2})}
+ function setP(s,x,y,z){s.m.position.set(x,y,z);s.x1=x-s.w/2;s.x2=x+s.w/2;s.y1=y-s.h/2;s.y2=y+s.h/2;s.z1=z-s.d/2;s.z2=z+s.d/2}
+ function buildBase(){SP.forEach(p=>{const m=new THREE.Mesh(new THREE.BoxGeometry(4,.2,4),mat("#c33"));m.position.set(p[0],.1,p[2]);sc.add(m)});if(sand)load()}
+ function buildObby(){const cs=["#e33","#fc0","#3b3","#39f","#f80","#a4c"];addBox(0,-.5,0,10,1,10,"#3b3");let z=0;
+  for(let i=0;i<5;i++){z-=7;addBox(i%2?4:-4,-.5,z,5,1,5,cs[i])}
+  z-=8;addBox(0,-.5,z,8,1,8,"#ccc");zn("cp",0,3,z,8,6,8,new THREE.Vector3(0,2,z));
+  for(let i=0;i<3;i++){z-=9;const s=addBox(0,-.5,z,5,1,5,cs[1]);movers.push({s,c:0,y:-.5,z,a:5,sp:1+i*.4,ph:i})}
+  z-=9;addBox(0,-.5,z,8,1,8,"#ccc");zn("cp",0,3,z,8,6,8,new THREE.Vector3(0,2,z));
+  for(let i=0;i<4;i++){z-=7;addBox(0,-.5,z,6,1,6,cs[i]);const k=new THREE.Mesh(new THREE.BoxGeometry(6,.6,1.5),mat("#e22"));k.position.set(0,.3,z);sc.add(k);zn("kill",0,.5,z,6,1,1.5)}
+  z-=9;addBox(0,-.5,z,10,1,10,"#fc0");zn("win",0,3,z,10,6,10)}
+ function buildKey(c){if(c>="Digit1"&&c<="Digit5"){col=+c[5]-1;note="Block color "+PC[col];return}
+  const fx=Math.sin(ch.rotation.y),fz=Math.cos(ch.rotation.y);
+  if(c=="KeyE"){const x=Math.round((pos.x+fx*4)/2)*2,z=Math.round((pos.z+fz*4)/2)*2,y=Math.round(pos.y/2)*2+1;
+   if(placed.length>=300||solids.some(s=>Math.abs((s.x1+s.x2)/2-x)<.1&&Math.abs((s.y1+s.y2)/2-y)<.1&&Math.abs((s.z1+s.z2)/2-z)<.1))return;{const s=addBox(x,y,z,2,2,2,PC[col]);s.col=PC[col];placed.push(s);save()}}
+  if(c=="KeyQ"){const px=pos.x+fx*4,pz=pos.z+fz*4;let b=null,bd=9;for(const s of placed){const d=Math.hypot((s.x1+s.x2)/2-px,(s.z1+s.z2)/2-pz);if(d<bd){bd=d;b=s}}
+   if(b){sc.remove(b.m);solids.splice(solids.indexOf(b),1);placed.splice(placed.indexOf(b),1);save()}}}
+ function respawn(){if(surv&&S.alive&&S.ph=="dis"){S.alive=false;S.msg="Eliminated!"}if(race){pos.set(-10,0,30);yaw=-Math.PI/2;car.v=0}else if(ob||surv)pos.copy(spawn);else{const p=SP[cust?0:Math.random()*3|0];pos.set(p[0],p[1],p[2])}vy=0}
+ function zoneCheck(){for(const z of zones){if(pos.x+.7>z.x1&&pos.x-.7<z.x2&&pos.z+.7>z.z1&&pos.z-.7<z.z2&&pos.y+5>z.y1&&pos.y<z.y2){
+   if(z.t=="kill")respawn();else if(z.t=="cp"&&spawn!==z.sp){spawn=z.sp;note="Checkpoint saved!"}else if(z.t=="rc")raceHit(z.sp);else if(z.t=="win"&&!won){won=true;note="YOU WIN! Time "+t.toFixed(1)+"s"}}}}
+ const extra=()=>(note?note+" | ":"")+(own?"":"E place, Q remove, 1-5 color | ")+gs();
+ if(sw)addSword(ch);
+ function gs(){if(race)return "Lap "+Math.min(R.lap+1,3)+"/3 | "+R.t.toFixed(1)+"s | ";
+  if(surv)return S.ph=="wait"?"Next disaster in "+Math.ceil(S.tm)+"s | "+S.msg+" | ":(S.dis?"FLOOD ":"METEORS ")+Math.ceil(S.tm)+"s | "+(S.alive?"Alive":"Eliminated")+" | ";
+  if(sw)return "Kills "+Pl.k+" Deaths "+Pl.d+" HP "+Pl.hp+" (vs 3 AI bots) | ";return ""}
+ function save(){if(!sand)return;try{localStorage.setItem("bl-sand",JSON.stringify(placed.map(s=>[(s.x1+s.x2)/2,(s.y1+s.y2)/2,(s.z1+s.z2)/2,s.col])));note="Build saved"}catch(e){note="Could not save"}}
+ function load(){try{const a=JSON.parse(localStorage.getItem("bl-sand")||"[]");a.forEach(b=>{const s=addBox(b[0],b[1],b[2],2,2,2,b[3]);s.col=b[3];placed.push(s)});if(a.length)note="Loaded "+a.length+" blocks"}catch(e){}}
+ function buildCustom(){world.map.forEach(o=>{const s=addBox(o.p[0],o.p[1],o.p[2],o.s[0],o.s[1],o.s[2],o.c);if(o.r){s.m.rotation.y=o.r;const c=Math.abs(Math.cos(o.r)),n=Math.abs(Math.sin(o.r)),w=o.s[0]*c+o.s[2]*n,d=o.s[0]*n+o.s[2]*c;s.x1=o.p[0]-w/2;s.x2=o.p[0]+w/2;s.z1=o.p[2]-d/2;s.z2=o.p[2]+d/2}})}
+ function buildSurv(){addBox(0,-1,0,44,2,44,"#6a5");const cs=["#e33","#fc0","#3b3","#39f","#f80","#a4c"];for(let i=0;i<6;i++)addBox(-12+i*4,1.5*(i+1),-14,4,3*(i+1),4,cs[i]);
+  S.wm=new THREE.Mesh(new THREE.BoxGeometry(70,1,70),new THREE.MeshLambertMaterial({color:"#2a7fd4",transparent:true,opacity:.6}));S.wm.position.y=-5;sc.add(S.wm)}
+ function survTick(dt){S.tm-=dt;if(S.ph=="wait"){if(S.tm<=0){S.ph="dis";S.tm=22;S.dis=Math.random()<.5?0:1;S.alive=true;S.msg=""}}
+  else{if(S.dis==0){if(Math.random()<dt*3){const m=new THREE.Mesh(new THREE.SphereGeometry(1.6,6,5),mat("#e52"));m.position.set((Math.random()-.5)*40,45,(Math.random()-.5)*40);sc.add(m);S.mets.push(m)}
+   for(const m of S.mets){m.position.y-=28*dt;if(S.alive&&Math.hypot(m.position.x-pos.x,m.position.z-pos.z)<2.5&&Math.abs(m.position.y-(pos.y+2.5))<3.5)respawn()}
+   S.mets=S.mets.filter(m=>m.position.y>-3||(sc.remove(m),false))}
+   else{S.wl=-5+(1-S.tm/22)*19;S.wm.position.y=S.wl-.5;if(S.alive&&pos.y<S.wl-1)respawn()}
+   if(S.tm<=0){S.ph="wait";S.tm=8;S.msg=S.alive?"You SURVIVED!":"Better luck next round";S.mets.forEach(m=>sc.remove(m));S.mets=[];S.wm.position.y=-5;respawn()}}}
+ function buildRace(){[[0,2,-40,104,4,2],[0,2,40,104,4,2],[-52,2,0,2,4,80],[52,2,0,2,4,80]].forEach((b,i)=>addBox(...b,i%2?"#fff":"#e33"));addBox(0,2,0,60,4,40,"#4a4");
+  const rd=(x,z,w,d,c)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,.1,d),mat(c||"#444"));m.position.set(x,.05,z);sc.add(m)};rd(0,30,100,20);rd(0,-30,100,20);rd(40,0,20,40);rd(-40,0,20,40);rd(0,30,2,20,"#fff");
+  zn("rc",40,3,0,20,6,4,0);zn("rc",0,3,-30,4,6,20,1);zn("rc",-40,3,0,20,6,4,2);zn("rc",0,3,30,4,6,20,3);
+  const g=new THREE.Group(),bx=(w,h,d,c,x,y,z)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(c));m.position.set(x,y,z);g.add(m)};bx(4,.8,6,"#d22",0,.5,0);[[-2.1,-2],[2.1,-2],[-2.1,2],[2.1,2]].forEach(p=>bx(.6,1.2,1.2,"#111",p[0],.6,p[1]));sc.add(g);car.m=g}
+ function raceTick(dt){const th=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0),st=(keys.KeyA||keys.ArrowLeft?1:0)-(keys.KeyD||keys.ArrowRight?1:0);
+  car.v=Math.max(-15,Math.min(50,car.v+th*45*dt));car.v*=1-(th?.3:1.2)*dt;yaw+=st*1.9*dt*Math.max(-1,Math.min(1,car.v/10));
+  pos.x-=Math.sin(yaw)*car.v*dt;collide("x",2,2);pos.z-=Math.cos(yaw)*car.v*dt;collide("z",2,2);
+  ch.rotation.y=yaw+Math.PI;car.m.position.copy(pos);car.m.rotation.y=yaw+Math.PI;if(!R.done)R.t+=dt}
+ function raceHit(i){if(R.done||i!=R.nxt)return;if(i==3){R.lap++;R.nxt=0;note="Lap "+R.lap+" done";if(R.lap>=3){R.done=true;note="FINISHED! "+R.t.toFixed(1)+"s"}}else R.nxt=i+1}
+ function addSword(c){const a=c.userData.P.ra,s=new THREE.Mesh(new THREE.BoxGeometry(.3,3.4,.5),mat("#ddd")),h=new THREE.Mesh(new THREE.BoxGeometry(.3,.4,1.4),mat("#850"));s.position.set(0,-2.7,0);h.position.set(0,-1.1,0);a.add(s,h)}
+ function buildArena(){[[0,2,-20,41,4,1],[0,2,20,41,4,1],[-20,2,0,1,4,40],[20,2,0,1,4,40]].forEach(b=>addBox(...b,"#a65"));addBox(0,.5,0,6,1,6,"#ccc");
+  [[-14,-14],[14,-14],[0,15]].forEach(p=>{const sv={...av};Object.assign(av,{torso:"#c33",legs:"#444",head:"#f5cd30",arms:"#f5cd30",hat:"none"});const b=buildChar();Object.assign(av,sv);addSword(b);b.position.set(p[0],0,p[1]);sc.add(b);B.push({c:b,hp:100,cd:1,sw:0,dead:0})})}
+ function attack(){if(Pl.sw>0)return;Pl.sw=.35;ch.rotation.y=Math.atan2(-Math.sin(yaw),-Math.cos(yaw));const fx=Math.sin(ch.rotation.y),fz=Math.cos(ch.rotation.y);
+  for(const b of B){if(b.dead>0)continue;const dx=b.c.position.x-pos.x,dz=b.c.position.z-pos.z,d=Math.hypot(dx,dz)||1;if(d<6&&(dx*fx+dz*fz)/d>.2){b.hp-=50;if(b.hp<=0){b.dead=2;b.c.visible=false;Pl.k++}}}}
+ function swTick(dt){Pl.sw=Math.max(0,Pl.sw-dt);for(const b of B){b.sw=Math.max(0,b.sw-dt);b.cd-=dt;
+   if(b.dead>0){b.dead-=dt;if(b.dead<=0){b.hp=100;b.c.visible=true;b.c.position.set((Math.random()-.5)*30,0,(Math.random()-.5)*30)}continue}
+   const dx=pos.x-b.c.position.x,dz=pos.z-b.c.position.z,d=Math.hypot(dx,dz)||1;b.c.rotation.y=Math.atan2(dx,dz);
+   if(d>4){b.c.position.x+=dx/d*8*dt;b.c.position.z+=dz/d*8*dt;animate(b.c,t,"walk",0)}else{animate(b.c,t,"idle",0);if(b.cd<=0){b.cd=1.1;b.sw=.35;Pl.hp-=20;if(Pl.hp<=0){Pl.d++;Pl.hp=100;respawn()}}}
+   b.c.position.x=Math.max(-18.5,Math.min(18.5,b.c.position.x));b.c.position.z=Math.max(-18.5,Math.min(18.5,b.c.position.z))}
+  const hb=box.querySelector(".hp i");if(hb)hb.style.width=Pl.hp+"%"}
+ function swingFx(){for(const a of [Pl,...B]){const c=a===Pl?ch:a.c;if(a.sw>0)c.userData.P.ra.rotation.x=-Math.sin((1-a.sw/.35)*Math.PI)*2.4}}
+ let yaw=Math.PI*0,pitch=.35,dist=14,vy=0,ground=true,state="idle",t=0,face=0;
+ const pos=ch.position,keys={};
+ const kd=e=>{if(e.target.tagName=="INPUT"||e.target.tagName=="SELECT")return;keys[e.code]=true;if(play&&!own&&!e.repeat)buildKey(e.code);if(sw&&e.code=="KeyF"&&!e.repeat)attack();if(["Space","ArrowUp","ArrowDown"].includes(e.code)&&play)e.preventDefault()},ku=e=>keys[e.code]=false;
+ addEventListener("keydown",kd);addEventListener("keyup",ku);
+ let drag=false,lx=0,ly=0;const cv=r.domElement;
+ cv.oncontextmenu=e=>e.preventDefault();
+ cv.onmousedown=e=>{if(e.button==0&&sw)attack();drag=true;lx=e.clientX;ly=e.clientY};
+ const mm=e=>{if(!drag&&document.pointerLockElement!==cv)return;yaw-=e.movementX*.008*SENS;pitch=Math.max(-.2,Math.min(1.3,pitch+e.movementY*.006*SENS))};
+ const mu=()=>drag=false;addEventListener("mousemove",mm);addEventListener("mouseup",mu);
+ cv.onwheel=e=>{e.preventDefault();dist=Math.max(0,Math.min(40,dist+e.deltaY*.02))};
+ const hud=box.querySelector(".hud");
+ function collide(axis,hw=.7,h=5){ // push out of solids
+  for(const s of solids){
+   if(pos.x+hw>s.x1&&pos.x-hw<s.x2&&pos.z+hw>s.z1&&pos.z-hw<s.z2&&pos.y+h>s.y1&&pos.y<s.y2){
+    if(axis=="y"){if(vy<=0){pos.y=s.y2;vy=0;ground=true}else{pos.y=s.y1-h;vy=0}}
+    else if(axis=="x")pos.x=pos.x<(s.x1+s.x2)/2?s.x1-hw:s.x2+hw;
+    else pos.z=pos.z<(s.z1+s.z2)/2?s.z1-hw:s.z2+hw}}}
+ respawn();const clk=new THREE.Clock();let raf;
+ function loop(){raf=requestAnimationFrame(loop);if(document.hidden){clk.getDelta();return}const dt=Math.min(clk.getDelta(),.05);t+=dt;
+  if(play){
+   for(const m of movers){const s=m.s,ox=(s.x1+s.x2)/2,nx=m.c+Math.sin(t*m.sp+m.ph)*m.a;const on=ground&&Math.abs(pos.y-s.y2)<.3&&pos.x>s.x1-.7&&pos.x<s.x2+.7&&pos.z>s.z1-.7&&pos.z<s.z2+.7;setP(s,nx,m.y,m.z);if(on)pos.x+=nx-ox}
+   if(surv)survTick(dt);if(race)raceTick(dt);if(sw)swTick(dt);const kk=race?{}:keys;let f=(kk.KeyW||kk.ArrowUp?1:0)-(kk.KeyS||kk.ArrowDown?1:0),rt=(kk.KeyD?1:0)-(kk.KeyA?1:0);
+   if(!race){if(keys.ArrowLeft)yaw+=dt*2;if(keys.ArrowRight)yaw-=dt*2}
+   const run=keys.ShiftLeft||keys.ShiftRight,sp=(run?26:16)*dt;
+   let dx=-Math.sin(yaw)*f+Math.cos(yaw)*rt,dz=-Math.cos(yaw)*f-Math.sin(yaw)*rt;const m=Math.hypot(dx,dz);
+   if(m>0){dx/=m;dz/=m;pos.x+=dx*sp;collide("x");pos.z+=dz*sp;collide("z");
+    let a=Math.atan2(dx,dz),d=a-ch.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));ch.rotation.y+=d*Math.min(1,dt*14)}
+   if(keys.Space&&ground&&!race){vy=50;ground=false}
+   vy-=120*dt;pos.y+=vy*dt;ground=false;collide("y");
+   if(!nog&&pos.y<=0){pos.y=0;vy=0;ground=true}
+   if(pos.y<-40)respawn();
+   state=!ground?(vy>0?"jump":"fall"):m>0?(run?"run":"walk"):"idle";
+   const fp=dist<1.5;ch.visible=!fp;
+   const cy=pos.y+4,cd=fp?.01:dist;
+   cam.position.set(pos.x+Math.sin(yaw)*Math.cos(pitch)*cd,cy+Math.sin(pitch)*cd,pos.z+Math.cos(yaw)*Math.cos(pitch)*cd);
+   cam.lookAt(pos.x,cy,pos.z);
+   if(fp)cam.position.set(pos.x,pos.y+4.5,pos.z);
+   if(window.NETTICK)NETTICK(dt,pos,ch.rotation.y,state);zoneCheck();if(hud)hud.textContent=extra()+`${state.toUpperCase()}  |  ${gfx.toUpperCase()}  |  Pos ${pos.x.toFixed(0)},${pos.y.toFixed(0)},${pos.z.toFixed(0)}`;
+  }else{state=window.__pv||"idle";ch.rotation.y+=dt*.8;cam.position.set(0,5,12);cam.lookAt(0,3.2,0);
+   const k=state=="idle"?0:state=="walk"||state=="run"?1:0}
+  animate(ch,t,state,0);if(sw)swingFx();r.render(sc,cam)}
+ const rs=()=>{r.setSize(W(),H());cam.aspect=W()/H();cam.updateProjectionMatrix()};addEventListener("resize",rs);
+ loop();
+ return{ch,sc,respawn,setCol(i){col=i;note="Block color "+PC[i]},stop(){cancelAnimationFrame(raf);removeEventListener("keydown",kd);removeEventListener("keyup",ku);removeEventListener("mousemove",mm);removeEventListener("mouseup",mu);removeEventListener("resize",rs);r.dispose();cv.remove()}}}
+
+// ---------- pages ----------
+const NAV=["Home","Games","Catalog","Create","Profile","Forum"];
+function renderNav(h){$("#nav").innerHTML=NAV.map(n=>`<a href="#${n.toLowerCase()}" class="${h.startsWith(n.toLowerCase())||(n=="Games"&&h.startsWith("game-"))?'on':''}">${n}</a>`).join("")}
+function home(){const by=(f)=>[...GAMES].sort(f);
+ return `<div class="box"><h2>Welcome to BLOCKLAND!</h2><div class="in hero"><div><p style="font-size:15px;margin-top:0"><b>Build. Play. Explore.</b> Customize your blocky character and jump into 3D worlds right in your browser.</p>
+ <p>Register to save your character, favorites and recently played games to your account.</p><a class="btn g" href="#game-classic-baseplate">Play Now</a> <a class="btn b" href="#profile">Customize Character</a>
+ <div class="ann"><b>Announcement:</b> Phase 2 is live – walk, run, jump and fall as a classic blocky character in Classic Baseplate.</div></div>
+ <div>${card(GAMES[1],1)}</div></div></div>
+ <div class="box"><h2>Featured Games</h2><div class="in grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">${GAMES.slice(0,3).map(g=>card(g,1)).join("")}</div></div>`+
+ section("Popular Games",GAMES,1)+section("Recently Updated",by((a,b)=>b.date-a.date).slice(0,4),1)+section("Most Visited",GAMES.slice(0,4),1)+section("Recommended",GAMES.slice(2,6),1)+
+ CATS.map(c=>{const l=GAMES.filter(g=>g.c==c);return l.length?section(c+" Games",l):""}).join("")}
+function games(q0=""){return `<div class="box"><h2>Games</h2><div class="in"><div class="tools"><input id="gq" type="search" value="${q0}" placeholder="Search games">
+ <select id="gs"><option value="pop">Sort: Popularity</option><option value="new">Sort: Newest</option><option value="pl">Sort: Player count</option></select>
+ <select id="gc"><option value="">All categories</option>${CATS.map(c=>`<option>${c}</option>`).join("")}</select></div><div id="gl"></div></div></div>`}
+function fillGames(){const q=$("#gq").value.toLowerCase(),c=$("#gc").value,s=$("#gs").value;
+ let l=GAMES.filter(g=>(!c||g.c==c)&&(g.t+g.d).toLowerCase().includes(q));
+ if(s=="new")l.sort((a,b)=>b.date-a.date);
+ $("#gl").innerHTML=l.length?l.map(g=>`<div class="row" style="margin-bottom:6px;border:1px solid #ccc;padding:4px;gap:8px"><div style="flex:0 0 150px;min-width:150px">${thumb(g)}</div><div><a href="#game-${g.id}"><b>${g.t}</b></a><br>${g.d}<br><small>By ${g.by} · ${g.c} · 0 playing</small></div></div>`).join(""):"No games match your search."}
+function gamePage(g){return `<div class="box"><h2>${g.t}</h2><div class="in"><div id="view"><div class="ov" id="ov"><h2 style="background:none;border:0;color:#fff;font-size:20px">${g.t}</h2>
+ ${g.play?`<button class="btn g" id="go" style="font-size:16px;padding:8px 24px">Play</button>${g.how?`<div style="font-size:13px;max-width:420px">${g.how}</div>`:""}<div style="font-size:12px">WASD move · Shift run · Space jump · Right-drag / arrows camera · Scroll zoom (zoom all the way in = first person)</div>`:`<div>This game is built in Phase ${g.ph}. Not playable yet.</div>`}</div><div class="hp"><i style="width:100%"></i></div><div class="hud"></div>
+ <div class="pl" id="pl"></div><button class="btn" id="mb">Menu (Esc)</button>
+ <div class="chat"><div id="cl"></div><input id="ci" type="text" maxlength="100" placeholder="Press Enter to chat"></div><div id="hb"></div>
+ <div class="ov" id="menu" style="display:none"><div class="box" style="color:#222;margin:0;min-width:250px;text-align:left"><h2>Menu</h2><div class="in">
+ <button class="btn b" id="m1">Resume</button> <button class="btn" id="m2">Respawn</button> <button class="btn" id="m3">Lock mouse</button>
+ <div class="sw"><label>Mouse speed</label><input type="range" id="sn" min="0.3" max="2" step="0.1"></div>
+ <div class="sw"><label>Graphics</label><select id="g2"><option value="low">Low</option><option value="med">Medium</option><option value="high">High</option></select></div>
+ <a class="btn" href="#games">Leave game</a></div></div></div></div>
+ <div class="tools" style="margin-top:6px"><button class="btn" id="fs">Fullscreen</button><a class="btn" href="#games">Exit</a><button class="btn" id="fv">☆ Favorite</button><button class="btn" id="lk">Lock mouse</button><select id="sg">${GAMES.filter(x=>x.play).map(x=>`<option value="${x.id}" ${x.id==g.id?"selected":""}>${x.t}</option>`).join("")}</select><button class="btn" id="rs">Respawn</button>
+ <select id="gx"><option value="low">Graphics: Low</option><option value="med">Graphics: Medium</option><option value="high">Graphics: High</option></select></div>
+ <p><b>Creator:</b> ${g.by} &nbsp; <b>Players:</b> 0 online &nbsp; <b>Genre:</b> ${g.c}</p><p>${g.d}</p></div></div>`}
+function profile(){return `<div id="acc"></div><div class="box"><h2>Character</h2><div class="in row"><div><div id="view" style="height:340px"></div><div class="tools" style="margin-top:6px">Preview:
+ ${["idle","walk","run","jump","fall"].map(s=>`<button class="btn pv" data-s="${s}">${s}</button>`).join("")}</div></div>
+ <div style="max-width:300px">${[["head","Head"],["torso","Torso"],["arms","Arms"],["legs","Legs"]].map(([k,n])=>`<div class="sw"><label>${n}</label><input type="color" data-k="${k}" value="${av[k]}"></div>`).join("")}
+ <div class="sw"><label>Face</label><select data-k="face">${FACES.map(f=>`<option ${av.face==f?'selected':''}>${f}</option>`).join("")}</select></div>
+ <div class="sw"><label>Hat</label><select data-k="hat">${["none","cap","top"].map(f=>`<option ${av.hat==f?'selected':''}>${f}</option>`).join("")}</select></div>
+ <p style="color:#666">Log in to save this character to your account.</p><button class="btn b" id="sv">Save to account</button> <span id="sm"></span><a class="btn g" href="#game-classic-baseplate">Play with this character</a></div></div></div>`}
+const later={catalog:["Catalog",7],create:["Create",7],forum:["Forum",6]};
+let eng=null,SENS=1,PNAME="Player";
+/* SUPABASE: paste your project URL and anon (public) key here. Never use the service_role key. */
+const SB_URL="",SB_KEY="";const WS_URL="";let NET=null;const sb=SB_URL&&window.supabase?supabase.createClient(SB_URL,SB_KEY):null;let me=null;
+function route(){if(NET){NET.ws.close();NET=null;window.NETTICK=null}window.__ui=null;document.exitPointerLock&&document.exitPointerLock();if(eng){eng.stop();eng=null}
+ const h=location.hash.slice(1)||"home";renderNav(h);const p=$("#page");window.__pv="idle";
+ if(h=="home")p.innerHTML=home();
+ else if(h=="games"){p.innerHTML=games(window.__q||"");window.__q="";["gq","gs","gc"].forEach(i=>$("#"+i).oninput=fillGames);fillGames()}
+ else if(h.startsWith("game-")){const g=[...GAMES,...(window.__draft?[window.__draft]:[])].find(x=>"game-"+x.id==h);if(!g){p.innerHTML=`<div class="box in">Game not found. <a href="#games">Browse games</a></div>`;return}
+  p.innerHTML=gamePage(g);$("#gx").value=gfx;$("#gx").onchange=e=>{gfx=e.target.value;if(eng){eng.stop();eng=null;launch(g)}};
+  $("#fs").onclick=()=>$("#view").requestFullscreen&&$("#view").requestFullscreen();
+  $("#rs").onclick=()=>eng&&eng.respawn();
+  if(g.play)$("#go").onclick=()=>launch(g);initUI(g);favInit(g)}
+ else if(h=="profile"){p.innerHTML=profile();eng=startScene($("#view"),false);loadAcc();
+  const rebuild=()=>{eng.ch.parent.remove(eng.ch);eng.stop();eng=startScene($("#view"),false)};
+  p.querySelectorAll("[data-k]").forEach(el=>el.onchange=e=>{av[el.dataset.k]=e.target.value;eng.stop();eng=startScene($("#view"),false)});
+  p.querySelectorAll(".pv").forEach(b=>b.onclick=()=>window.__pv=b.dataset.s)}
+ else if(h=="create"){p.innerHTML=editorPage();eng=startEditor()}
+ else if(h=="login"||h=="register"){p.innerHTML=authPage(h=="register");$("#ab").onclick=()=>doAuth(h=="register")}
+ else if(later[h])p.innerHTML=`<div class="box"><h2>${later[h][0]}</h2><div class="in">The ${later[h][0]} is planned for Phase ${later[h][1]} and isn't built yet.</div></div>`;
+ else p.innerHTML=`<div class="box in">Page not found. <a href="#home">Home</a></div>`;
+ scrollTo(0,0)}
+function paintAcct(){const a=$("#acct");a.innerHTML=me?`Logged in as <b>${me.username}</b> · <a href="#profile">Profile</a> · <a href="#home" id="lo">Logout</a>`:`Not logged in · <a href="#login">Login</a> · <a href="#register">Register</a>`;
+ if(me)$("#lo").onclick=async()=>{await sb.auth.signOut();me=null;PNAME="Player";paintAcct()}}
+async function setUser(s){me=null;if(s){const r=await sb.from("profiles").select("username,avatar").eq("id",s.user.id).maybeSingle();if(r.data){me={id:s.user.id,username:r.data.username};PNAME=me.username;if(r.data.avatar)Object.assign(av,r.data.avatar)}}paintAcct()}
+async function initAuth(){if(!sb)return;try{const r=await sb.auth.getSession();await setUser(r.data.session);route()}catch(e){}}
+function authPage(reg){return `<div class="box" style="max-width:400px;margin:auto"><h2>${reg?"Register":"Login"}</h2><div class="in">${sb?"":"<div class='ann'>Online accounts are not configured in this preview. Self-host the file with your Supabase URL and anon key.</div>"}
+ ${reg?'<div class="sw"><label>Username</label><input id="au" type="text" maxlength="20"></div>':""}<div class="sw"><label>Email</label><input id="ae" type="text"></div><div class="sw"><label>Password</label><input id="ap" type="password"></div>
+ <button class="btn g" id="ab">${reg?"Register":"Login"}</button> <span id="am" style="color:#c00"></span></div></div>`}
+async function doAuth(reg){const m=$("#am");m.textContent="";if(!sb){m.textContent="Not configured in this preview.";return}
+ const e=$("#ae").value.trim(),pw=$("#ap").value;let r;
+ if(reg){const u=$("#au").value.trim();if(!/^[A-Za-z0-9_]{3,20}$/.test(u)){m.textContent="Username: 3-20 letters, numbers or _";return}r=await sb.auth.signUp({email:e,password:pw,options:{data:{username:u}}})}
+ else r=await sb.auth.signInWithPassword({email:e,password:pw});
+ if(r.error){m.textContent=/Database/.test(r.error.message)?"That username is probably taken.":r.error.message;return}
+ if(r.data.session){await setUser(r.data.session);location.hash="#profile"}else m.textContent="Check your email to confirm your account, then log in."}
+function recordPlay(g){if(sb&&me)sb.from("recent_plays").upsert({user_id:me.id,game_id:g.id,played_at:new Date().toISOString()}).then(()=>{})}
+async function favInit(g){const b=$("#fv");if(!b)return;if(!sb||!me){b.onclick=()=>location.hash="#login";return}
+ const q=()=>sb.from("favorites");let on=((await q().select("game_id").eq("user_id",me.id).eq("game_id",g.id)).data||[]).length>0;
+ const paint=()=>b.textContent=on?"★ Favorited":"☆ Favorite";paint();
+ b.onclick=async()=>{const r=on?await q().delete().eq("user_id",me.id).eq("game_id",g.id):await q().insert({user_id:me.id,game_id:g.id});if(!r.error){on=!on;paint()}}}
+async function loadAcc(){const a=$("#acc");if(!a)return;
+ const sv=$("#sv");if(sv)sv.onclick=async()=>{if(!sb||!me){$("#sm").textContent="Log in first";return}const r=await sb.from("profiles").update({avatar:{...av}}).eq("id",me.id);$("#sm").textContent=r.error?r.error.message:"Saved!"};
+ if(!sb){a.innerHTML='<div class="box"><h2>Account</h2><div class="in">Online accounts are not configured in this preview. Self-host with your Supabase keys.</div></div>';return}
+ if(!me){a.innerHTML='<div class="box"><h2>Account</h2><div class="in">You are not logged in. <a href="#login">Login</a> or <a href="#register">Register</a>.</div></div>';return}
+ const [fr,fv,rp,mg]=await Promise.all([sb.from("friendships").select("friend_id").eq("user_id",me.id),sb.from("favorites").select("game_id").eq("user_id",me.id),sb.from("recent_plays").select("game_id,played_at").eq("user_id",me.id).order("played_at",{ascending:false}).limit(6),sb.from("games").select("id,title,published").eq("owner",me.id)]);
+ const ids=(fr.data||[]).map(x=>x.friend_id);let names=[];if(ids.length){const r=await sb.from("profiles").select("username").in("id",ids);names=(r.data||[]).map(x=>x.username)}
+ const gl=rows=>(rows||[]).map(x=>GAMES.find(g=>g.id==x.game_id)).filter(Boolean).map(g=>`<a href="#game-${g.id}">${g.t}</a>`).join(", ")||"None yet";
+ a.innerHTML=`<div class="box"><h2>${me.username}</h2><div class="in row"><div style="flex:0 0 80px;min-width:80px"><img src="${faceTex(av.face).image.toDataURL()}" width="64" height="64" style="border:1px solid #888"></div>
+ <div><p><b>Favorites:</b> ${gl(fv.data)}</p><p><b>Recently played:</b> ${gl(rp.data)}</p><p><b>My games:</b> ${(mg.data||[]).map(x=>x.published?`<a href="#game-${x.id}">${x.title}</a>`:x.title+" (draft)").join(", ")||"None yet. Try the <a href='#create'>Creator</a>."}</p><p><b>Friends:</b> ${names.join(", ")||"None yet"}</p>
+ <div class="tools"><input id="fn" type="text" placeholder="Add friend by username"><button class="btn" id="fb">Add</button><span id="fm"></span></div></div></div></div>`;
+ $("#fb").onclick=async()=>{const n=$("#fn").value.trim();const r=await sb.from("profiles").select("id").eq("username",n).maybeSingle();
+  if(!r.data){$("#fm").textContent="No such user";return}if(r.data.id==me.id){$("#fm").textContent="That's you";return}
+  const w=await sb.from("friendships").insert({user_id:me.id,friend_id:r.data.id});if(w.error)$("#fm").textContent=w.error.code=="23505"?"Already added":w.error.message;else loadAcc()}}
+let MAP={id:"",title:"My Game",objs:[]};
+const savedMaps=()=>{try{return JSON.parse(localStorage.getItem("bl-maps")||"{}")}catch(e){return{}}};
+function upsertGame(rec){const g={id:rec.id,t:rec.title,by:rec.by||"Player",c:"Custom",d:"A user-made game.",sky:"#87ceeb",g:"#4a4",bl:["#e33","#fc0","#39f"],date:9,play:true,map:rec.map},i=GAMES.findIndex(x=>x.id==rec.id);if(i<0)GAMES.push(g);else GAMES[i]=g}
+async function saveMap(pub){MAP.id=MAP.id||"u-"+Math.random().toString(36).slice(2,9);const rec={id:MAP.id,title:MAP.title,by:PNAME,map:MAP.objs,pub};
+ try{const L=savedMaps();L[MAP.id]=rec;localStorage.setItem("bl-maps",JSON.stringify(L))}catch(e){}
+ let msg=pub?"Published (this browser only; log in to publish online)":"Saved in this browser";
+ if(sb&&me){const r=await sb.from("games").upsert({id:MAP.id,owner:me.id,owner_name:me.username,title:MAP.title,data:MAP.objs,published:pub,updated_at:new Date().toISOString()});msg=r.error?r.error.message:(pub?"Published online":"Saved online")}
+ if(pub)upsertGame(rec);return msg}
+async function loadUserGames(){Object.values(savedMaps()).forEach(m=>m.pub&&upsertGame(m));
+ if(sb){try{const r=await sb.from("games").select("id,title,owner_name,data").eq("published",true).limit(50);(r.data||[]).forEach(x=>upsertGame({id:x.id,title:x.title,by:x.owner_name,map:x.data}))}catch(e){}}
+ if(/^#(home|games|game-u-.*)?$/.test(location.hash))route()}
+function editorPage(){const sv=Object.values(savedMaps());return `<div class="box"><h2>Game Creator</h2><div class="in"><div class="tools"><input id="etl" type="text" maxlength="40" value="${MAP.title}"><button class="btn" id="eb">Add Block</button><button class="btn" id="ed">Delete</button><button class="btn" id="en">New</button><select id="eo"><option value="">Open saved...</option>${sv.map(m=>`<option value="${m.id}">${m.title}</option>`).join("")}</select><button class="btn b" id="es">Save</button><button class="btn g" id="ep">Publish</button><button class="btn g" id="et2">Play-test</button><span id="em"></span></div>
+ <div class="row" style="gap:6px"><div style="flex:0 0 110px;min-width:90px"><b>Objects</b><div id="ol"></div></div><div id="view" style="flex:1 1 300px;height:420px"></div><div style="flex:0 0 150px;min-width:130px" id="pp"></div></div><p style="color:#666;margin:6px 0 0">Drag to orbit, scroll to zoom, click a block to select it. Blocks start on the baseplate (y=0.5 sits on the ground).</p></div></div>`}
+function startEditor(){const box=$("#view"),W=()=>box.clientWidth,H=()=>box.clientHeight;
+ const r=new THREE.WebGLRenderer({antialias:gfx!="low"});r.setSize(W(),H());box.appendChild(r.domElement);
+ const sc=new THREE.Scene();sc.background=new THREE.Color("#87ceeb");sc.add(new THREE.AmbientLight(0xffffff,.7));const L=new THREE.DirectionalLight(0xffffff,.6);L.position.set(20,40,10);sc.add(L);
+ const gr=new THREE.Mesh(new THREE.BoxGeometry(100,1,100),new THREE.MeshLambertMaterial({color:"#4a4"}));gr.position.y=-.5;sc.add(gr);
+ const cam=new THREE.PerspectiveCamera(60,W()/H(),.1,500),ms=[];let sel=-1,yaw=.6,pit=.6,dist=30;
+ function build(pn){ms.forEach(m=>sc.remove(m));ms.length=0;MAP.objs.forEach((o,i)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial({color:o.c}));m.position.set(...o.p);m.scale.set(...o.s);m.rotation.y=o.r;
+  if(i==sel)m.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.04,1.04,1.04)),new THREE.LineBasicMaterial({color:0xffffff})));sc.add(m);ms.push(m)});if(pn)panel()}
+ function panel(){$("#ol").innerHTML=MAP.objs.map((o,i)=>`<div class="ob ${i==sel?"on":""}" data-i="${i}">Block ${i+1}</div>`).join("")||"Empty";const o=MAP.objs[sel];
+  $("#pp").innerHTML=o?"<b>Properties</b>"+[["x",o.p,0],["y",o.p,1],["z",o.p,2],["w",o.s,0],["h",o.s,1],["d",o.s,2]].map(([n,a,i])=>`<div class="sw"><label style="width:24px">${n}</label><input type="number" data-a="${n}" value="${a[i]}" style="width:70px"></div>`).join("")+`<div class="sw"><label style="width:24px">rot</label><input type="number" step="15" data-a="r" value="${Math.round(o.r*180/Math.PI)}" style="width:70px"></div><div class="sw"><label style="width:24px">col</label><input type="color" data-a="c" value="${o.c}"></div>`:"Select a block"}
+ $("#ol").onclick=e=>{const i=e.target.dataset.i;if(i!=null){sel=+i;build(1)}};
+ $("#pp").oninput=e=>{const o=MAP.objs[sel],n=e.target.dataset.a,v=e.target.value;if(!o||!n||v=="")return;
+  if(n=="c")o.c=v;else if(n=="r")o.r=v*Math.PI/180;else if("xyz".includes(n))o.p["xyz".indexOf(n)]=+v;else o.s["whd".indexOf(n)]=Math.max(.5,+v);build(0)};
+ $("#etl").oninput=e=>MAP.title=e.target.value;
+ $("#eb").onclick=()=>{MAP.objs.push({p:[(MAP.objs.length%6)*5-12,.5,0],s:[4,1,4],r:0,c:["#e33","#fc0","#3b3","#39f","#f80"][MAP.objs.length%5]});sel=MAP.objs.length-1;build(1)};
+ $("#ed").onclick=()=>{if(sel>=0){MAP.objs.splice(sel,1);sel=-1;build(1)}};
+ $("#en").onclick=()=>{MAP={id:"",title:"My Game",objs:[]};sel=-1;$("#etl").value=MAP.title;build(1)};
+ $("#eo").onchange=e=>{const m=savedMaps()[e.target.value];if(m){MAP={id:m.id,title:m.title,objs:JSON.parse(JSON.stringify(m.map))};sel=-1;$("#etl").value=MAP.title;build(1)}};
+ $("#es").onclick=async()=>{$("#em").textContent=await saveMap(false)};$("#ep").onclick=async()=>{$("#em").textContent=await saveMap(true)};
+ $("#et2").onclick=()=>{window.__draft={id:"draft",t:MAP.title+" (draft)",by:PNAME,c:"Custom",d:"Play-test of your unsaved map.",sky:"#87ceeb",g:"#4a4",bl:["#e33"],date:0,play:true,map:JSON.parse(JSON.stringify(MAP.objs))};location.hash="#game-draft"};
+ const cv=r.domElement;let dr=false,mv=0,lx=0,ly=0;
+ cv.onmousedown=e=>{dr=true;mv=0;lx=e.clientX;ly=e.clientY};
+ const mm=e=>{if(!dr)return;const dx=e.clientX-lx,dy=e.clientY-ly;mv+=Math.abs(dx)+Math.abs(dy);yaw-=dx*.008;pit=Math.max(.05,Math.min(1.5,pit+dy*.006));lx=e.clientX;ly=e.clientY};
+ const mu=e=>{if(!dr)return;dr=false;if(mv<5){const b=cv.getBoundingClientRect(),rc=new THREE.Raycaster();rc.setFromCamera({x:(e.clientX-b.left)/b.width*2-1,y:-(e.clientY-b.top)/b.height*2+1},cam);const h=rc.intersectObjects(ms)[0];sel=h?ms.indexOf(h.object):-1;build(1)}};
+ cv.onwheel=e=>{e.preventDefault();dist=Math.max(8,Math.min(90,dist+e.deltaY*.04))};addEventListener("mousemove",mm);addEventListener("mouseup",mu);
+ let raf;build(1);(function lp(){raf=requestAnimationFrame(lp);cam.position.set(Math.sin(yaw)*Math.cos(pit)*dist,Math.sin(pit)*dist+2,Math.cos(yaw)*Math.cos(pit)*dist);cam.lookAt(0,2,0);r.render(sc,cam)})();
+ return{stop(){cancelAnimationFrame(raf);removeEventListener("mousemove",mm);removeEventListener("mouseup",mu);r.dispose();cv.remove()}}}
+function startNet(g){if(!WS_URL||NET)return;let ws;try{ws=new WebSocket(WS_URL)}catch(e){return}
+ const P={},say=m=>window.__say&&window.__say("",m);let myId=0,acc=0;NET={ws};
+ const list=()=>{const e=$("#pl");if(e)e.innerHTML="<b>Players</b><div>"+PNAME+" (you)</div>"+Object.values(P).map(p=>"<div>"+p.n+"</div>").join("")};
+ ws.onopen=()=>{ws.send(JSON.stringify({t:"join",room:g.id,name:PNAME,av}));say("Connected to the online server.")};
+ ws.onclose=()=>{say("Disconnected from server.");NET=null;window.NETTICK=null;Object.values(P).forEach(p=>p.c.parent&&p.c.parent.remove(p.c))};
+ ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
+  if(m.t=="hello")myId=m.id;
+  else if(m.t=="join"&&m.id!=myId&&eng){const sv={...av};Object.assign(av,m.a||{});const c=buildChar();Object.assign(av,sv);
+   const cv=document.createElement("canvas");cv.width=256;cv.height=48;const x=cv.getContext("2d");x.font="bold 30px Arial";x.textAlign="center";x.lineWidth=5;x.strokeStyle="#000";x.fillStyle="#fff";x.strokeText(m.n,128,34);x.fillText(m.n,128,34);
+   const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),depthTest:false}));sp.scale.set(8,1.5,1);sp.position.y=6.5;c.add(sp);eng.sc.add(c);P[m.id]={n:m.n,c,x:0,y:5,z:0,r:0,s:"idle"};list();say(m.n+" joined.")}
+  else if(m.t=="leave"&&P[m.id]){P[m.id].c.parent&&P[m.id].c.parent.remove(P[m.id].c);say(P[m.id].n+" left.");delete P[m.id];list()}
+  else if(m.t=="chat"&&window.__say)window.__say(m.n,m.m);
+  else if(m.t=="snap")m.p.forEach(a=>{const p=P[a[0]];if(p){p.x=a[1];p.y=a[2];p.z=a[3];p.r=a[4];p.s=a[5]}})};
+ window.NETTICK=(dt,pos,rot,st)=>{acc+=dt;if(acc>.066&&ws.readyState==1){acc=0;ws.send(JSON.stringify({t:"pos",x:pos.x,y:pos.y,z:pos.z,r:rot,s:st}))}
+  const k=Math.min(1,dt*10),now=performance.now()/1000;for(const p of Object.values(P)){const c=p.c;c.position.x+=(p.x-c.position.x)*k;c.position.y+=(p.y-c.position.y)*k;c.position.z+=(p.z-c.position.z)*k;let d=p.r-c.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));c.rotation.y+=d*k;animate(c,now,p.s,0)}}}
+function initUI(g){const v=$("#view"),menu=$("#menu"),cl=$("#cl"),ci=$("#ci");
+ const say=(n,m)=>{const d=document.createElement("div");d.textContent=(n?n+": ":"")+m;cl.appendChild(d);while(cl.children.length>40)cl.firstChild.remove();cl.scrollTop=1e9};
+ say("","Chat is local to this tab until multiplayer arrives (Phase 8).");
+ $("#pl").innerHTML="<b>Players</b><div>"+PNAME+" (you)</div>"+(g.c=="Combat"?[1,2,3].map(i=>"<div>Bot "+i+" (AI)</div>").join(""):"");
+ const tl=g.c=="Building"||g.c=="Baseplate"?["#e33","#fc0","#3b3","#39f","#fff"]:g.c=="Combat"?["Sword"]:["Hands"],isC=t=>t&&t[0]=="#";
+ $("#hb").innerHTML=[0,1,2,3,4].map(i=>`<span data-i="${i}" class="${i==0?"sel":""}" style="${isC(tl[i])?"background:"+tl[i]:""}">${tl[i]&&!isC(tl[i])?tl[i]:isC(tl[i])?"":""}</span>`).join("");
+ const sel=i=>{if(!isC(tl[i]))return;[...$("#hb").children].forEach((s,j)=>s.classList.toggle("sel",j==i));eng&&eng.setCol(i)};
+ $("#hb").onclick=e=>{const i=e.target.dataset.i;if(i!=null)sel(+i)};
+ const toggle=()=>{const o=menu.style.display=="none";menu.style.display=o?"flex":"none";$("#g2").value=gfx;$("#sn").value=SENS};
+ const lock=()=>{const c=v.querySelector("canvas");if(c&&c.requestPointerLock)c.requestPointerLock();else say("","Press Play first.")};
+ $("#mb").onclick=toggle;$("#m1").onclick=toggle;$("#m2").onclick=()=>{eng&&eng.respawn();toggle()};$("#m3").onclick=()=>{toggle();lock()};$("#lk").onclick=lock;
+ $("#sn").oninput=e=>SENS=+e.target.value;
+ $("#g2").onchange=e=>{gfx=e.target.value;$("#gx").value=gfx;if(eng){eng.stop();eng=null;launch(g)}};
+ $("#sg").onchange=e=>location.hash="#game-"+e.target.value;
+ ci.onkeydown=e=>{if(e.key=="Enter"){if(ci.value.trim()){if(NET&&NET.ws.readyState==1)NET.ws.send(JSON.stringify({t:"chat",m:ci.value.trim()}));else say(PNAME,ci.value.trim())}ci.value="";ci.blur()}};
+ window.__say=say;window.__ui={ci,menu:toggle,sel}}
+function launch(g){const v=$("#view");const o=$("#ov");if(o)o.innerHTML="<b>Loading "+g.t+"...</b>";
+ setTimeout(()=>{if(location.hash!="#game-"+g.id)return;try{eng=startScene(v,true,g);if(o)o.remove();recordPlay(g);startNet(g)}catch(e){v.innerHTML='<div class="ov">WebGL is not available in this browser.</div>'}},350)}
+addEventListener("keydown",e=>{const u=window.__ui;if(!u)return;
+ if(e.code=="Enter"&&document.activeElement!=u.ci){e.preventDefault();document.exitPointerLock&&document.exitPointerLock();u.ci.focus()}
+ else if(e.code=="Escape"){u.ci.blur();u.menu()}
+ else if(document.activeElement.tagName!="INPUT"&&e.code>="Digit1"&&e.code<="Digit5")u.sel(+e.code[5]-1)});
+addEventListener("hashchange",route);
+$("#qb").onclick=()=>{window.__q=$("#q").value;location.hash="#games";route()};
+$("#q").onkeydown=e=>{if(e.key=="Enter")$("#qb").click()};paintAcct();initAuth();loadUserGames();
+route();
+</script></body></html>

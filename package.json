@@ -1,0 +1,17 @@
+{
+  "name": "blockland",
+  "version": "0.9.0",
+  "private": true,
+  "description": "BLOCKLAND: a 2013-style browser block-game platform with Three.js, Supabase accounts and WebSocket multiplayer.",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  },
+  "dependencies": {
+    "@supabase/supabase-js": "^2.119.0",
+    "ws": "^8.18.0"
+  }
+}
