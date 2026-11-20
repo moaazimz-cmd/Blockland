@@ -4,16 +4,20 @@ const http = require("http"), fs = require("fs"), path = require("path");
 const { WebSocketServer } = require("ws");
 const PORT = process.env.PORT || 8080;
 
+const MIME = { ".html": "text/html; charset=utf-8", ".css": "text/css", ".ttf": "font/ttf", ".otf": "font/otf", ".woff2": "font/woff2", ".png": "image/png", ".svg": "image/svg+xml", ".ico": "image/x-icon" };
 const srv = http.createServer((q, s) => {
-  const css = q.url.split("?")[0] === "/style.css";
-  fs.readFile(path.join(__dirname, css ? "style.css" : "index.html"), "utf8", (e, d) => {
+  let u; try { u = decodeURIComponent(q.url.split("?")[0]); } catch { u = "/"; }
+  if (u === "/") u = "/index.html";
+  const f = path.join(__dirname, path.normalize(u)), ext = path.extname(f).toLowerCase();
+  if (!MIME[ext] || !f.startsWith(__dirname + path.sep)) { s.writeHead(404); return s.end("Not found"); }
+  fs.readFile(f, ext === ".html" ? "utf8" : null, (e, d) => {
     if (e) { s.writeHead(404); return s.end("Not found"); }
-    if (!css) {
+    if (ext === ".html" && path.basename(f) === "index.html") {
       const proto = q.headers["x-forwarded-proto"] === "https" ? "wss://" : "ws://";
       d = d.replace('const WS_URL="";', "const WS_URL=" + JSON.stringify(proto + q.headers.host) + ";")
            .replace('const SB_URL="",SB_KEY="";', "const SB_URL=" + JSON.stringify(process.env.SUPABASE_URL || "") + ",SB_KEY=" + JSON.stringify(process.env.SUPABASE_ANON_KEY || "") + ";");
     }
-    s.writeHead(200, { "Content-Type": css ? "text/css" : "text/html; charset=utf-8" });
+    s.writeHead(200, { "Content-Type": MIME[ext] });
     s.end(d);
   });
 });

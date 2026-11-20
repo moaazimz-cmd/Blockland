@@ -1,24 +1,23 @@
 <!DOCTYPE html>
 <html lang="en"><head><meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link href="https://fonts.googleapis.com/css2?family=Comic+Neue:wght@400;700&display=swap" rel="stylesheet">
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='6' fill='%23003d80'/%3E%3Ctext x='16' y='25' font-size='24' font-weight='bold' text-anchor='middle' fill='white' stroke='%230066CC' stroke-width='1.5' font-family='Impact,Arial'%3EB%3C/text%3E%3C/svg%3E">
 <title>BLOCKLAND – Build. Play. Explore.</title>
 <link rel="stylesheet" href="style.css"></head><body>
-<div id="top"><div class="bar">
-<a class="logo" href="#home"><i>BLOCK</i>LAND</a>
-<div class="nav" id="nav"></div><div class="sp"></div>
-<input id="q" type="search" placeholder="Search games"><button class="btn" id="qb">Search</button>
-</div></div>
-<div id="sub"><div class="bar"><span id="acct">Not logged in</span><div class="sp"></div><span>Notifications: 0</span></div></div>
+<div id="top"><div class="hdr"><div class="bar"><a class="logo" href="#home" aria-label="BLOCKLAND home"><span class="lt"><span class="lb">B</span></span><span class="ln">BLOCKLAND</span></a><div class="sp"></div>
+<div class="hr"><div class="hl"><span id="acct">Not logged in</span> &nbsp;|&nbsp; Notifications: 0</div><div class="hs"><input id="q" type="search" placeholder="Search games"><button class="btn" id="qb">Search</button></div></div></div></div>
+<div class="nvb"><div class="bar"><div class="nav" id="nav"></div></div></div></div>
 <div id="page"></div>
-<footer>BLOCKLAND is an original project inspired by early-2010s block-building sites. Not affiliated with any other company.</footer>
+<footer><a href="#home">Home</a> | <a href="#games">Games</a> | <a href="#catalog">Catalog</a> | <a href="#create">Create</a> | <a href="#profile">Profile</a> | <a href="#forum">Forum</a><br>BLOCKLAND is an original project inspired by early-2010s block-building sites. Not affiliated with any other company.</footer>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.js"></script>
 <script>
 const $=s=>document.querySelector(s);
 const CATS=["Obby","Baseplate","Survival","Racing","Building","Combat"];
 const GAMES=[
-{id:"classic-obby",t:"Classic Obby",by:"BlockTeam",c:"Obby",d:"Hop across colorful floating platforms to reach the finish.",sky:"#87ceeb",g:"#5a9",bl:["#e33","#fc0","#3b3","#39f"],date:5,play:true},
-{id:"classic-baseplate",t:"Classic Baseplate",by:"BlockTeam",c:"Baseplate",d:"A big green baseplate. Run, jump and explore with your character.",sky:"#87ceeb",g:"#4a4",bl:["#c33","#36c","#fc0"],date:4,play:true},
+{id:"classic-obby",t:"Classic Obby",by:"BlockTeam",c:"Obby",d:"Hop across colorful floating platforms to reach the finish.",sky:"#87ceeb",g:"#5a9",bl:["#e33","#fc0","#3b3","#39f"],date:5,play:true,how:"Reach the gold finish pad. Gray pads save your checkpoint, red bricks send you back, and moving platforms carry you."},
+{id:"classic-baseplate",t:"Classic Baseplate",by:"BlockTeam",c:"Baseplate",d:"A big green baseplate. Run, jump and explore with your character.",sky:"#87ceeb",g:"#4a4",bl:["#c33","#36c","#fc0"],date:4,play:true,how:"E places a block in front of you, Q removes the nearest one, and 1-5 pick the block color."},
 {id:"natural-disaster-survival",t:"Natural Disaster Survival",by:"BlockTeam",c:"Survival",d:"Survive random disasters on a small map.",sky:"#9ab",g:"#684",bl:["#963","#777","#c52"],date:3,play:true,how:"Survive each round: climb the tower when the flood rises and dodge falling meteors."},
 {id:"classic-racing",t:"Classic Racing",by:"BlockTeam",c:"Racing",d:"Race blocky cars around the track.",sky:"#8cf",g:"#555",bl:["#d22","#eee","#22d"],date:2,play:true,how:"W/S throttle and brake, A/D steer. Pass every checkpoint to finish 3 laps."},
 {id:"sandbox-building",t:"Sandbox Building",by:"BlockTeam",c:"Building",d:"Place blocks and build whatever you like.",sky:"#acf",g:"#6b5",bl:["#fa0","#a4f","#4cc","#f66"],date:1,play:true,how:"E places a block, Q removes one, 1-5 pick colors. Builds save automatically in this browser."},
@@ -29,24 +28,42 @@ const section=(title,list,link)=>`<div class="box"><h2>${link?`<a href="#games">
 
 // ---------- avatar ----------
 const av={head:"#f5cd30",torso:"#0d69ac",arms:"#f5cd30",legs:"#a2c429",face:"smile",hat:"none"};
-const FACES=["smile","grin","shocked","wink"];
-function faceTex(kind){const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d");x.fillStyle=av.head;x.fillRect(0,0,64,64);x.fillStyle="#000";
+const FACES=["smile","grin","shocked","wink","cool","angry"];
+function faceTex(kind){const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d");x.clearRect(0,0,64,64);x.fillStyle="#000";
  if(kind=="wink"){x.fillRect(16,18,8,12);x.fillRect(40,24,10,3)}else{x.fillRect(16,18,8,12);x.fillRect(40,18,8,12)}
  x.lineWidth=4;x.strokeStyle="#000";x.beginPath();
  if(kind=="shocked")x.arc(32,46,6,0,7);else if(kind=="grin"){x.fillRect(16,40,32,10);x.fillStyle="#fff";x.fillRect(20,40,24,4)}else x.arc(32,36,13,.2,Math.PI-.2);
- x.stroke();const t=new THREE.CanvasTexture(c);return t}
+ x.stroke();if(kind=="cool"){x.fillStyle="#000";x.fillRect(10,16,44,12)}if(kind=="angry"){x.lineWidth=4;x.beginPath();x.moveTo(10,10);x.lineTo(28,20);x.moveTo(54,10);x.lineTo(36,20);x.stroke()}const t=new THREE.CanvasTexture(c);return t}
 const mat=c=>new THREE.MeshLambertMaterial({color:c});
+const RG={};
+function rbox(w,h,d,r){r=Math.min(r,w/2,h/2,d/2);const key=[w,h,d,r].join();if(RG[key])return RG[key];
+ const g=new THREE.BoxGeometry(w,h,d,6,6,6),P=g.attributes.position,N=g.attributes.normal,H=[w/2,h/2,d/2];
+ for(let i=0;i<P.count;i++){const o=[P.getX(i),P.getY(i),P.getZ(i)],dv=[0,0,0],cc=[0,0,0];
+  for(let k=0;k<3;k++){const hh=H[k],u=Math.round(Math.abs(o[k])/hh*3),inn=hh-r,a=Math.sign(o[k])*(u>=3?hh:u==2?inn+.4*r:u==1?inn:0);cc[k]=Math.max(-inn,Math.min(inn,a));dv[k]=a-cc[k]}
+  const L=Math.hypot(dv[0],dv[1],dv[2])||1;P.setXYZ(i,cc[0]+dv[0]/L*r,cc[1]+dv[1]/L*r,cc[2]+dv[2]/L*r);N.setXYZ(i,dv[0]/L,dv[1]/L,dv[2]/L)}
+ P.needsUpdate=true;N.needsUpdate=true;return RG[key]=g}
+function startPreview(box){let r;try{r=new THREE.WebGLRenderer({antialias:true})}catch(e){box.innerHTML='<div style="padding:10px">The 3D preview needs WebGL.</div>';return{refresh(){},stop(){}}}
+ const w=()=>box.clientWidth||260,h=()=>box.clientHeight||340;r.setPixelRatio(Math.min(devicePixelRatio,2));r.setSize(w(),h());r.setClearColor(0xcfe6f7,1);box.appendChild(r.domElement);
+ const sc=new THREE.Scene(),cam=new THREE.PerspectiveCamera(40,w()/h(),.1,100);cam.position.set(0,5,16);cam.lookAt(0,3,0);
+ sc.add(new THREE.AmbientLight(0xffffff,.75));const L=new THREE.DirectionalLight(0xffffff,.6);L.position.set(10,20,15);sc.add(L);
+ let ch=null;const refresh=()=>{if(ch)sc.remove(ch);ch=buildChar();sc.add(ch)};refresh();
+ const clk=new THREE.Clock();let t=0,raf;(function lp(){raf=requestAnimationFrame(lp);const dt=Math.min(clk.getDelta(),.05);t+=dt;ch.rotation.y+=dt*.8;animate(ch,t,window.__pv||"idle",0);r.render(sc,cam)})();
+ return{refresh,stop(){cancelAnimationFrame(raf);r.dispose();r.forceContextLoss&&r.forceContextLoss();r.domElement.remove()}}}
 function buildChar(){
  const G=new THREE.Group(),P={};
- const box=(w,h,d,col)=>new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(col));
+ const box=(w,h,d,col)=>new THREE.Mesh(rbox(w,h,d,.18),mat(col));
  const part=(k,w,h,d,col,px,py,off)=>{const p=new THREE.Group();p.position.set(px,py,0);const m=box(w,h,d,col);m.position.y=off;p.add(m);G.add(p);P[k]=p;return m};
- const hm=part("head",2,1,1,av.head,0,4,.5);
- const tex=faceTex(av.face);hm.material=[0,1,2,3,4,5].map(i=>i==4?new THREE.MeshLambertMaterial({map:tex}):mat(av.head));
- part("torso",2,2,1,av.torso,0,2,1);
+ part("head",2,1,1,av.head,0,4,.5);{const fd=new THREE.Mesh(new THREE.PlaneGeometry(1.7,.75),new THREE.MeshLambertMaterial({map:faceTex(av.face),transparent:true,polygonOffset:true,polygonOffsetFactor:-2}));fd.position.set(0,.5,.505);P.head.add(fd)}
+ part("torso",2,2,1,av.torso,0,2,1);if(av.shirt&&av.shirt!="none"){const sd=new THREE.Mesh(new THREE.PlaneGeometry(1.7,1.7),new THREE.MeshLambertMaterial({map:shirtTex(av.shirt),polygonOffset:true,polygonOffsetFactor:-2}));sd.position.set(0,1,.505);P.torso.add(sd)}
  part("la",1,2,1,av.arms,-1.5,4,-1);part("ra",1,2,1,av.arms,1.5,4,-1);
  part("ll",1,2,1,av.legs,-.5,2,-1);part("rl",1,2,1,av.legs,.5,2,-1);
  if(av.hat=="cap"){const h=box(2.2,.5,2.2,"#c22");h.position.y=1.05;P.head.add(h)}
  if(av.hat=="top"){const h=box(1.3,1.4,1.3,"#222");h.position.y=1.5;P.head.add(h)}
+ if(av.hat=="crown"){const h=box(2.1,.5,1.1,"#fc0");h.position.y=1.2;P.head.add(h);[-.8,0,.8].forEach(x=>{const k=box(.4,.5,.4,"#fc0");k.position.set(x,1.6,0);P.head.add(k)})}
+ if(av.hat=="party"){const h=new THREE.Mesh(new THREE.ConeGeometry(.7,1.6,6),mat("#f4c"));h.position.y=1.3;P.head.add(h)}
+ if(av.acc=="backpack"){const h=box(1.4,1.6,.6,"#843");h.position.set(0,1,-.8);P.torso.add(h)}
+ if(av.acc=="cape"){const h=box(1.8,2.2,.12,"#c22");h.position.set(0,.8,-.58);P.torso.add(h)}
+ if(av.acc=="scarf"){const h=box(2.2,.5,1.2,"#e33");h.position.set(0,1.9,0);P.torso.add(h)}
  G.traverse(o=>{if(o.isMesh)o.castShadow=true});
  G.userData.P=P;return G}
 function animate(ch,t,state,spd){const P=ch.userData.P,s=Math.sin(t*(state=="run"?13:8)),a=state=="run"?.9:.6;
@@ -71,8 +88,8 @@ function startScene(box,play,world){
  const sun=new THREE.DirectionalLight(0xffffff,.6);sun.position.set(30,60,20);sun.castShadow=!!GFX[gfx].sh;
  Object.assign(sun.shadow.camera,{left:-40,right:40,top:40,bottom:-40});sc.add(sun);
  const solids=[];
- const addBox=(x,y,z,w,h,d,col)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(w,h,d),mat(col));m.position.set(x,y,z);m.receiveShadow=m.castShadow=true;sc.add(m);const s={m,w,h,d,x1:x-w/2,x2:x+w/2,y1:y-h/2,y2:y+h/2,z1:z-d/2,z2:z+d/2};solids.push(s);return s};
- let spawn=new THREE.Vector3(0,2,0),zones=[],movers=[],placed=[],note="",won=false,SP=[[0,5,0],[16,5,16],[-16,5,-16]];const ob=play&&world.id=="classic-obby",race=play&&world.id=="classic-racing",surv=play&&world.id=="natural-disaster-survival",sw=play&&world.id=="classic-sword-fight",sand=play&&world.id=="sandbox-building",cust=play&&!!world.map,own=ob||race||surv||sw||cust,nog=ob||surv,S={ph:"wait",tm:6,alive:true,dis:0,mets:[],wl:-5,wm:null,msg:""},car={v:0,m:null},R={lap:0,nxt:0,t:0,done:false},B=[],Pl={k:0,d:0,hp:100,sw:0};
+ const addBox=(x,y,z,w,h,d,col)=>{const m=new THREE.Mesh(gfx=="low"?new THREE.BoxGeometry(w,h,d):rbox(w,h,d,.25),mat(col));m.position.set(x,y,z);m.receiveShadow=m.castShadow=true;sc.add(m);const s={m,w,h,d,x1:x-w/2,x2:x+w/2,y1:y-h/2,y2:y+h/2,z1:z-d/2,z2:z+d/2};solids.push(s);return s};
+ let spawn=new THREE.Vector3(0,2,0),zones=[],movers=[],placed=[],note="",won=false,SP=[[0,5,0],[16,5,16],[-16,5,-16]];const ob=play&&world.id=="classic-obby",race=play&&world.id=="classic-racing",surv=play&&world.id=="natural-disaster-survival",sw=play&&world.id=="classic-sword-fight",sand=play&&world.id=="sandbox-building",cust=play&&!!world.map,own=ob||race||surv||sw||cust,nog=ob||surv,S={ph:"wait",tm:6,alive:true,dis:0,mets:[],wl:-5,wm:null,msg:""},car={v:0,m:null},R={lap:0,nxt:0,t:0,done:false},B=[],Pl={k:0,d:0,hp:100,sw:0},CS=[];
  if(play){if(!nog){const g=new THREE.Mesh(new THREE.BoxGeometry(400,2,400),mat(world.g));g.position.y=-1;g.receiveShadow=true;sc.add(g)}
   const cs=["#c33","#36c","#fc0","#3a3","#a4c"];
   (own?[]:[[10,3,-12,8,6,8],[-14,1.5,-8,6,3,6],[0,1,-24,12,2,6],[18,5,10,6,10,6],[-8,.75,12,4,1.5,4],[-4,2,16,4,4,4],[0,3.5,20,4,7,4]]).forEach((b,i)=>addBox(...b,cs[i%5]));
@@ -96,17 +113,25 @@ function startScene(box,play,world){
    if(placed.length>=300||solids.some(s=>Math.abs((s.x1+s.x2)/2-x)<.1&&Math.abs((s.y1+s.y2)/2-y)<.1&&Math.abs((s.z1+s.z2)/2-z)<.1))return;{const s=addBox(x,y,z,2,2,2,PC[col]);s.col=PC[col];placed.push(s);save()}}
   if(c=="KeyQ"){const px=pos.x+fx*4,pz=pos.z+fz*4;let b=null,bd=9;for(const s of placed){const d=Math.hypot((s.x1+s.x2)/2-px,(s.z1+s.z2)/2-pz);if(d<bd){bd=d;b=s}}
    if(b){sc.remove(b.m);solids.splice(solids.indexOf(b),1);placed.splice(placed.indexOf(b),1);save()}}}
- function respawn(){if(surv&&S.alive&&S.ph=="dis"){S.alive=false;S.msg="Eliminated!"}if(race){pos.set(-10,0,30);yaw=-Math.PI/2;car.v=0}else if(ob||surv)pos.copy(spawn);else{const p=SP[cust?0:Math.random()*3|0];pos.set(p[0],p[1],p[2])}vy=0}
+ function respawn(){if(surv&&S.alive&&S.ph=="dis"){S.alive=false;S.msg="Eliminated!"}if(race){pos.set(-10,0,30);yaw=-Math.PI/2;car.v=0}else if(ob||surv||(cust&&zones.some(z=>z.sp===spawn)))pos.copy(spawn);else{const p=cust?(CS.length?CS[Math.random()*CS.length|0]:SP[0]):SP[Math.random()*3|0];pos.set(p[0],p[1],p[2])}vy=0}
  function zoneCheck(){for(const z of zones){if(pos.x+.7>z.x1&&pos.x-.7<z.x2&&pos.z+.7>z.z1&&pos.z-.7<z.z2&&pos.y+5>z.y1&&pos.y<z.y2){
-   if(z.t=="kill")respawn();else if(z.t=="cp"&&spawn!==z.sp){spawn=z.sp;note="Checkpoint saved!"}else if(z.t=="rc")raceHit(z.sp);else if(z.t=="win"&&!won){won=true;note="YOU WIN! Time "+t.toFixed(1)+"s"}}}}
- const extra=()=>(note?note+" | ":"")+(own?"":"E place, Q remove, 1-5 color | ")+gs();
+   if(z.t=="kill")respawn();else if(z.t=="cp"&&spawn!==z.sp){spawn=z.sp;note="Checkpoint saved!"}else if(z.t=="bounce"){vy=85;ground=false}else if(z.t=="rc")raceHit(z.sp);else if(z.t=="win"&&!won){won=true;note="YOU WIN! Time "+t.toFixed(1)+"s"}}}}
+ const extra=()=>(note?note+" | ":"")+gs();
  if(sw)addSword(ch);
  function gs(){if(race)return "Lap "+Math.min(R.lap+1,3)+"/3 | "+R.t.toFixed(1)+"s | ";
   if(surv)return S.ph=="wait"?"Next disaster in "+Math.ceil(S.tm)+"s | "+S.msg+" | ":(S.dis?"FLOOD ":"METEORS ")+Math.ceil(S.tm)+"s | "+(S.alive?"Alive":"Eliminated")+" | ";
   if(sw)return "Kills "+Pl.k+" Deaths "+Pl.d+" HP "+Pl.hp+" (vs 3 AI bots) | ";return ""}
  function save(){if(!sand)return;try{localStorage.setItem("bl-sand",JSON.stringify(placed.map(s=>[(s.x1+s.x2)/2,(s.y1+s.y2)/2,(s.z1+s.z2)/2,s.col])));note="Build saved"}catch(e){note="Could not save"}}
  function load(){try{const a=JSON.parse(localStorage.getItem("bl-sand")||"[]");a.forEach(b=>{const s=addBox(b[0],b[1],b[2],2,2,2,b[3]);s.col=b[3];placed.push(s)});if(a.length)note="Loaded "+a.length+" blocks"}catch(e){}}
- function buildCustom(){world.map.forEach(o=>{const s=addBox(o.p[0],o.p[1],o.p[2],o.s[0],o.s[1],o.s[2],o.c);if(o.r){s.m.rotation.y=o.r;const c=Math.abs(Math.cos(o.r)),n=Math.abs(Math.sin(o.r)),w=o.s[0]*c+o.s[2]*n,d=o.s[0]*n+o.s[2]*c;s.x1=o.p[0]-w/2;s.x2=o.p[0]+w/2;s.z1=o.p[2]-d/2;s.z2=o.p[2]+d/2}})}
+ function buildCustom(){world.map.forEach(o=>{const t=o.t||"block";if(t=="env")return;const [x,y,z]=o.p,[w,h,d]=o.s,col={kill:"#e22",checkpoint:"#ccc",finish:"#fc0",bounce:"#f4c",spawn:"#3b3"}[t]||o.c;
+  if(t=="spawn"){const m=new THREE.Mesh(new THREE.BoxGeometry(w,.3,d),mat(col));m.position.set(x,y,z);sc.add(m);CS.push([x,y+3,z]);return}
+  const s=addBox(x,y,z,w,h,d,col);
+  if(o.r&&t!="mover"){s.m.rotation.y=o.r;const c=Math.abs(Math.cos(o.r)),n=Math.abs(Math.sin(o.r)),W=w*c+d*n,D=w*n+d*c;s.x1=x-W/2;s.x2=x+W/2;s.z1=z-D/2;s.z2=z+D/2}
+  const cx=(s.x1+s.x2)/2,cz=(s.z1+s.z2)/2,W2=s.x2-s.x1+.6,D2=s.z2-s.z1+.6;
+  if(t=="kill")zn("kill",cx,y,cz,W2,h+.6,D2);else if(t=="finish")zn("win",cx,y+2,cz,W2,h+4,D2);
+  else if(t=="checkpoint")zn("cp",cx,y+2,cz,W2,h+4,D2,new THREE.Vector3(x,y+h/2+3,z));
+  else if(t=="bounce")zn("bounce",cx,y+h/2+.5,cz,W2,1,D2);
+  else if(t=="mover")movers.push({s,c:x,y,z,a:o.a||6,sp:o.v||1,ph:0})})}
  function buildSurv(){addBox(0,-1,0,44,2,44,"#6a5");const cs=["#e33","#fc0","#3b3","#39f","#f80","#a4c"];for(let i=0;i<6;i++)addBox(-12+i*4,1.5*(i+1),-14,4,3*(i+1),4,cs[i]);
   S.wm=new THREE.Mesh(new THREE.BoxGeometry(70,1,70),new THREE.MeshLambertMaterial({color:"#2a7fd4",transparent:true,opacity:.6}));S.wm.position.y=-5;sc.add(S.wm)}
  function survTick(dt){S.tm-=dt;if(S.ph=="wait"){if(S.tm<=0){S.ph="dis";S.tm=22;S.dis=Math.random()<.5?0:1;S.alive=true;S.msg=""}}
@@ -173,51 +198,54 @@ function startScene(box,play,world){
    cam.position.set(pos.x+Math.sin(yaw)*Math.cos(pitch)*cd,cy+Math.sin(pitch)*cd,pos.z+Math.cos(yaw)*Math.cos(pitch)*cd);
    cam.lookAt(pos.x,cy,pos.z);
    if(fp)cam.position.set(pos.x,pos.y+4.5,pos.z);
-   if(window.NETTICK)NETTICK(dt,pos,ch.rotation.y,state);zoneCheck();if(hud)hud.textContent=extra()+`${state.toUpperCase()}  |  ${gfx.toUpperCase()}  |  Pos ${pos.x.toFixed(0)},${pos.y.toFixed(0)},${pos.z.toFixed(0)}`;
+   if(window.NETTICK)NETTICK(dt,pos,ch.rotation.y,state);zoneCheck();if(hud){const tx=extra().replace(/ \| $/,"");hud.textContent=tx;hud.style.display=tx?"":"none"}
   }else{state=window.__pv||"idle";ch.rotation.y+=dt*.8;cam.position.set(0,5,12);cam.lookAt(0,3.2,0);
    const k=state=="idle"?0:state=="walk"||state=="run"?1:0}
   animate(ch,t,state,0);if(sw)swingFx();r.render(sc,cam)}
  const rs=()=>{r.setSize(W(),H());cam.aspect=W()/H();cam.updateProjectionMatrix()};addEventListener("resize",rs);
  loop();
- return{ch,sc,respawn,setCol(i){col=i;note="Block color "+PC[i]},stop(){cancelAnimationFrame(raf);removeEventListener("keydown",kd);removeEventListener("keyup",ku);removeEventListener("mousemove",mm);removeEventListener("mouseup",mu);removeEventListener("resize",rs);r.dispose();cv.remove()}}}
+ return{ch,sc,respawn,look(dx,dy){yaw-=dx*.008*SENS;pitch=Math.max(-.2,Math.min(1.3,pitch+dy*.006*SENS))},setCol(i){col=i;note="Block color "+PC[i]},stop(){cancelAnimationFrame(raf);removeEventListener("keydown",kd);removeEventListener("keyup",ku);removeEventListener("mousemove",mm);removeEventListener("mouseup",mu);removeEventListener("resize",rs);r.dispose();r.forceContextLoss&&r.forceContextLoss();cv.remove()}}}
 
 // ---------- pages ----------
 const NAV=["Home","Games","Catalog","Create","Profile","Forum"];
-function renderNav(h){$("#nav").innerHTML=NAV.map(n=>`<a href="#${n.toLowerCase()}" class="${h.startsWith(n.toLowerCase())||(n=="Games"&&h.startsWith("game-"))?'on':''}">${n}</a>`).join("")}
+function renderNav(h){$("#nav").innerHTML=NAV.map(n=>`<a href="#${n.toLowerCase()}" class="${h.startsWith(n.toLowerCase())||(n=="Games"&&h.startsWith("game-"))||(n=="Forum"&&h.startsWith("thread-"))?'on':''}">${n}</a>`).join("")}
 function home(){const by=(f)=>[...GAMES].sort(f);
  return `<div class="box"><h2>Welcome to BLOCKLAND!</h2><div class="in hero"><div><p style="font-size:15px;margin-top:0"><b>Build. Play. Explore.</b> Customize your blocky character and jump into 3D worlds right in your browser.</p>
- <p>Register to save your character, favorites and recently played games to your account.</p><a class="btn g" href="#game-classic-baseplate">Play Now</a> <a class="btn b" href="#profile">Customize Character</a>
- <div class="ann"><b>Announcement:</b> Phase 2 is live – walk, run, jump and fall as a classic blocky character in Classic Baseplate.</div></div>
+ <p>Register to save your character, favorites and recently played games to your account.</p><a class="btn g" href="#game-classic-baseplate">Play Now</a> <a class="btn b" href="#catalog">Shop the Catalog</a> <a class="btn" href="#create">Make a Game</a>
+ <div class="ann"><b>Announcement:</b> Six playable games, a free Catalog and a Game Creator are open. Jump in!</div></div>
  <div>${card(GAMES[1],1)}</div></div></div>
  <div class="box"><h2>Featured Games</h2><div class="in grid" style="grid-template-columns:repeat(auto-fill,minmax(200px,1fr))">${GAMES.slice(0,3).map(g=>card(g,1)).join("")}</div></div>`+
  section("Popular Games",GAMES,1)+section("Recently Updated",by((a,b)=>b.date-a.date).slice(0,4),1)+section("Most Visited",GAMES.slice(0,4),1)+section("Recommended",GAMES.slice(2,6),1)+
  CATS.map(c=>{const l=GAMES.filter(g=>g.c==c);return l.length?section(c+" Games",l):""}).join("")}
-function games(q0=""){return `<div class="box"><h2>Games</h2><div class="in"><div class="tools"><input id="gq" type="search" value="${q0}" placeholder="Search games">
- <select id="gs"><option value="pop">Sort: Popularity</option><option value="new">Sort: Newest</option><option value="pl">Sort: Player count</option></select>
- <select id="gc"><option value="">All categories</option>${CATS.map(c=>`<option>${c}</option>`).join("")}</select></div><div id="gl"></div></div></div>`}
+function games(q0=""){return `<div class="row2"><div class="side"><div class="box"><h2>Search</h2><div class="in"><input id="gq" type="search" value="${q0}" placeholder="Search games" style="width:100%"></div></div>
+ <div class="box"><h2>Sort By</h2><div class="in"><select id="gs" size="3" style="width:100%"><option value="pop" selected>Popularity</option><option value="new">Newest</option><option value="pl">Player count</option></select></div></div>
+ <div class="box"><h2>Genre</h2><div class="in"><select id="gc" size="8" style="width:100%"><option value="" selected>All Genres</option>${CATS.map(c=>`<option>${c}</option>`).join("")}<option>Custom</option></select></div></div></div>
+ <div class="main"><div class="box"><h2>Games</h2><div class="in"><div id="gl"></div></div></div></div></div>`}
 function fillGames(){const q=$("#gq").value.toLowerCase(),c=$("#gc").value,s=$("#gs").value;
  let l=GAMES.filter(g=>(!c||g.c==c)&&(g.t+g.d).toLowerCase().includes(q));
  if(s=="new")l.sort((a,b)=>b.date-a.date);
  $("#gl").innerHTML=l.length?l.map(g=>`<div class="row" style="margin-bottom:6px;border:1px solid #ccc;padding:4px;gap:8px"><div style="flex:0 0 150px;min-width:150px">${thumb(g)}</div><div><a href="#game-${g.id}"><b>${g.t}</b></a><br>${g.d}<br><small>By ${g.by} · ${g.c} · 0 playing</small></div></div>`).join(""):"No games match your search."}
-function gamePage(g){return `<div class="box"><h2>${g.t}</h2><div class="in"><div id="view"><div class="ov" id="ov"><h2 style="background:none;border:0;color:#fff;font-size:20px">${g.t}</h2>
- ${g.play?`<button class="btn g" id="go" style="font-size:16px;padding:8px 24px">Play</button>${g.how?`<div style="font-size:13px;max-width:420px">${g.how}</div>`:""}<div style="font-size:12px">WASD move · Shift run · Space jump · Right-drag / arrows camera · Scroll zoom (zoom all the way in = first person)</div>`:`<div>This game is built in Phase ${g.ph}. Not playable yet.</div>`}</div><div class="hp"><i style="width:100%"></i></div><div class="hud"></div>
+function gamePage(g){return `<div class="box"><h2>${g.t}</h2><div class="in"><div class="row gp"><div style="flex:3 1 520px;min-width:0"><div id="view"><div class="ov" id="ov"><h2 style="background:none;border:0;color:#fff;font-size:20px">${g.t}</h2>
+ ${g.play?`<button class="btn g" id="go" style="font-size:16px;padding:8px 24px">Play</button>`:`<div>This game isn't playable yet.</div>`}</div><div class="hp"><i style="width:100%"></i></div><div class="hud"></div>
  <div class="pl" id="pl"></div><button class="btn" id="mb">Menu (Esc)</button>
  <div class="chat"><div id="cl"></div><input id="ci" type="text" maxlength="100" placeholder="Press Enter to chat"></div><div id="hb"></div>
- <div class="ov" id="menu" style="display:none"><div class="box" style="color:#222;margin:0;min-width:250px;text-align:left"><h2>Menu</h2><div class="in">
- <button class="btn b" id="m1">Resume</button> <button class="btn" id="m2">Respawn</button> <button class="btn" id="m3">Lock mouse</button>
- <div class="sw"><label>Mouse speed</label><input type="range" id="sn" min="0.3" max="2" step="0.1"></div>
- <div class="sw"><label>Graphics</label><select id="g2"><option value="low">Low</option><option value="med">Medium</option><option value="high">High</option></select></div>
- <a class="btn" href="#games">Leave game</a></div></div></div></div>
+ <div class="ov" id="menu" style="display:none"><div class="box mnu" style="color:#222;margin:0"><h2 style="font-size:19px;padding:9px 14px">Paused</h2><div class="in" style="padding:14px">
+ <div class="mgrid"><button class="btn b" id="m1">Resume</button><button class="btn" id="m2">Respawn</button><button class="btn" id="m3">Lock mouse</button><button class="btn" id="m4">Fullscreen</button></div>
+ <div class="mtabs"><button class="btn mtab b" data-p="mtS">Settings</button><button class="btn mtab" data-p="mtH">How to play</button></div>
+ <div id="mtS"><div class="sw"><label style="width:110px">Mouse speed</label><input type="range" id="sn" min="0.3" max="2" step="0.1"></div>
+ <div class="sw"><label style="width:110px">Graphics</label><select id="g2"><option value="low">Low</option><option value="med">Medium</option><option value="high">High</option></select></div></div>
+ <div id="mtH" style="display:none"><div class="ctl">${g.how?`<p style="margin:0 0 8px"><b>${g.how}</b></p>`:""}Move: WASD &middot; Jump: Space &middot; Run: Shift<br>Camera: drag or arrow keys &middot; Zoom: scroll (all the way in = first person)<br>Chat: Enter &middot; Menu: Esc &middot; Touch: joystick and buttons</div></div>
+ <div style="margin-top:14px"><a class="btn" href="#games">Leave game</a></div></div></div></div></div>
  <div class="tools" style="margin-top:6px"><button class="btn" id="fs">Fullscreen</button><a class="btn" href="#games">Exit</a><button class="btn" id="fv">☆ Favorite</button><button class="btn" id="lk">Lock mouse</button><select id="sg">${GAMES.filter(x=>x.play).map(x=>`<option value="${x.id}" ${x.id==g.id?"selected":""}>${x.t}</option>`).join("")}</select><button class="btn" id="rs">Respawn</button>
  <select id="gx"><option value="low">Graphics: Low</option><option value="med">Graphics: Medium</option><option value="high">Graphics: High</option></select></div>
- <p><b>Creator:</b> ${g.by} &nbsp; <b>Players:</b> 0 online &nbsp; <b>Genre:</b> ${g.c}</p><p>${g.d}</p></div></div>`}
+ </div><div class="ginfo" style="flex:1 1 220px"><p><b>Creator:</b> ${g.by} &nbsp; <b>Players:</b> 0 online &nbsp; <b>Genre:</b> ${g.c}</p><p>${g.d}</p></div></div></div></div>`}
 function profile(){return `<div id="acc"></div><div class="box"><h2>Character</h2><div class="in row"><div><div id="view" style="height:340px"></div><div class="tools" style="margin-top:6px">Preview:
  ${["idle","walk","run","jump","fall"].map(s=>`<button class="btn pv" data-s="${s}">${s}</button>`).join("")}</div></div>
  <div style="max-width:300px">${[["head","Head"],["torso","Torso"],["arms","Arms"],["legs","Legs"]].map(([k,n])=>`<div class="sw"><label>${n}</label><input type="color" data-k="${k}" value="${av[k]}"></div>`).join("")}
  <div class="sw"><label>Face</label><select data-k="face">${FACES.map(f=>`<option ${av.face==f?'selected':''}>${f}</option>`).join("")}</select></div>
- <div class="sw"><label>Hat</label><select data-k="hat">${["none","cap","top"].map(f=>`<option ${av.hat==f?'selected':''}>${f}</option>`).join("")}</select></div>
+ <div class="sw"><label>Hat</label><select data-k="hat">${["none","cap","top","crown","party"].map(f=>`<option ${av.hat==f?'selected':''}>${f}</option>`).join("")}</select></div>
  <p style="color:#666">Log in to save this character to your account.</p><button class="btn b" id="sv">Save to account</button> <span id="sm"></span><a class="btn g" href="#game-classic-baseplate">Play with this character</a></div></div></div>`}
-const later={catalog:["Catalog",7],create:["Create",7],forum:["Forum",6]};
+const later={};
 let eng=null,SENS=1,PNAME="Player";
 /* SUPABASE: paste your project URL and anon (public) key here. Never use the service_role key. */
 const SB_URL="",SB_KEY="";const WS_URL="";let NET=null;const sb=SB_URL&&window.supabase?supabase.createClient(SB_URL,SB_KEY):null;let me=null;
@@ -230,18 +258,21 @@ function route(){if(NET){NET.ws.close();NET=null;window.NETTICK=null}window.__ui
   $("#fs").onclick=()=>$("#view").requestFullscreen&&$("#view").requestFullscreen();
   $("#rs").onclick=()=>eng&&eng.respawn();
   if(g.play)$("#go").onclick=()=>launch(g);initUI(g);favInit(g)}
- else if(h=="profile"){p.innerHTML=profile();eng=startScene($("#view"),false);loadAcc();
+ else if(h=="profile"){p.innerHTML=profile();eng=startPreview($("#view"));loadAcc();if(isGuest())p.querySelectorAll("[data-k]").forEach(x=>x.disabled=true);
   const rebuild=()=>{eng.ch.parent.remove(eng.ch);eng.stop();eng=startScene($("#view"),false)};
-  p.querySelectorAll("[data-k]").forEach(el=>el.onchange=e=>{av[el.dataset.k]=e.target.value;eng.stop();eng=startScene($("#view"),false)});
+  p.querySelectorAll("[data-k]").forEach(el=>el.oninput=e=>{av[el.dataset.k]=e.target.value;saveAv();eng.refresh()});
   p.querySelectorAll(".pv").forEach(b=>b.onclick=()=>window.__pv=b.dataset.s)}
+ else if(h=="forum")forumList();
+ else if(h.startsWith("thread-"))forumThread(h.slice(7));
+ else if(h=="catalog"){p.innerHTML=catalogPage();eng=startPreview($("#view"));catalogInit()}
  else if(h=="create"){p.innerHTML=editorPage();eng=startEditor()}
  else if(h=="login"||h=="register"){p.innerHTML=authPage(h=="register");$("#ab").onclick=()=>doAuth(h=="register")}
- else if(later[h])p.innerHTML=`<div class="box"><h2>${later[h][0]}</h2><div class="in">The ${later[h][0]} is planned for Phase ${later[h][1]} and isn't built yet.</div></div>`;
+ else if(later[h])p.innerHTML=`<div class="box"><h2>${later[h][0]}</h2><div class="in">The ${later[h][0]} isn't available yet.</div></div>`;
  else p.innerHTML=`<div class="box in">Page not found. <a href="#home">Home</a></div>`;
  scrollTo(0,0)}
 function paintAcct(){const a=$("#acct");a.innerHTML=me?`Logged in as <b>${me.username}</b> · <a href="#profile">Profile</a> · <a href="#home" id="lo">Logout</a>`:`Not logged in · <a href="#login">Login</a> · <a href="#register">Register</a>`;
- if(me)$("#lo").onclick=async()=>{await sb.auth.signOut();me=null;PNAME="Player";paintAcct()}}
-async function setUser(s){me=null;if(s){const r=await sb.from("profiles").select("username,avatar").eq("id",s.user.id).maybeSingle();if(r.data){me={id:s.user.id,username:r.data.username};PNAME=me.username;if(r.data.avatar)Object.assign(av,r.data.avatar)}}paintAcct()}
+ if(me)$("#lo").onclick=async()=>{await sb.auth.signOut();me=null;CLOUDAV=null;applyAv();paintAcct();route()}}
+async function setUser(s){me=null;if(s){const r=await sb.from("profiles").select("username,avatar").eq("id",s.user.id).maybeSingle();if(r.data){me={id:s.user.id,username:r.data.username};CLOUDAV=r.data.avatar||null}}applyAv();paintAcct()}
 async function initAuth(){if(!sb)return;try{const r=await sb.auth.getSession();await setUser(r.data.session);route()}catch(e){}}
 function authPage(reg){return `<div class="box" style="max-width:400px;margin:auto"><h2>${reg?"Register":"Login"}</h2><div class="in">${sb?"":"<div class='ann'>Online accounts are not configured in this preview. Self-host the file with your Supabase URL and anon key.</div>"}
  ${reg?'<div class="sw"><label>Username</label><input id="au" type="text" maxlength="20"></div>':""}<div class="sw"><label>Email</label><input id="ae" type="text"></div><div class="sw"><label>Password</label><input id="ap" type="password"></div>
@@ -264,51 +295,125 @@ async function loadAcc(){const a=$("#acc");if(!a)return;
  const [fr,fv,rp,mg]=await Promise.all([sb.from("friendships").select("friend_id").eq("user_id",me.id),sb.from("favorites").select("game_id").eq("user_id",me.id),sb.from("recent_plays").select("game_id,played_at").eq("user_id",me.id).order("played_at",{ascending:false}).limit(6),sb.from("games").select("id,title,published").eq("owner",me.id)]);
  const ids=(fr.data||[]).map(x=>x.friend_id);let names=[];if(ids.length){const r=await sb.from("profiles").select("username").in("id",ids);names=(r.data||[]).map(x=>x.username)}
  const gl=rows=>(rows||[]).map(x=>GAMES.find(g=>g.id==x.game_id)).filter(Boolean).map(g=>`<a href="#game-${g.id}">${g.t}</a>`).join(", ")||"None yet";
- a.innerHTML=`<div class="box"><h2>${me.username}</h2><div class="in row"><div style="flex:0 0 80px;min-width:80px"><img src="${faceTex(av.face).image.toDataURL()}" width="64" height="64" style="border:1px solid #888"></div>
+ a.innerHTML=`<div class="box"><h2>${me.username}</h2><div class="in row"><div style="flex:0 0 80px;min-width:80px"><img src="${faceTex(av.face).image.toDataURL()}" width="64" height="64" style="border:1px solid #888;background:${av.head}"></div>
  <div><p><b>Favorites:</b> ${gl(fv.data)}</p><p><b>Recently played:</b> ${gl(rp.data)}</p><p><b>My games:</b> ${(mg.data||[]).map(x=>x.published?`<a href="#game-${x.id}">${x.title}</a>`:x.title+" (draft)").join(", ")||"None yet. Try the <a href='#create'>Creator</a>."}</p><p><b>Friends:</b> ${names.join(", ")||"None yet"}</p>
  <div class="tools"><input id="fn" type="text" placeholder="Add friend by username"><button class="btn" id="fb">Add</button><span id="fm"></span></div></div></div></div>`;
  $("#fb").onclick=async()=>{const n=$("#fn").value.trim();const r=await sb.from("profiles").select("id").eq("username",n).maybeSingle();
   if(!r.data){$("#fm").textContent="No such user";return}if(r.data.id==me.id){$("#fm").textContent="That's you";return}
   const w=await sb.from("friendships").insert({user_id:me.id,friend_id:r.data.id});if(w.error)$("#fm").textContent=w.error.code=="23505"?"Already added":w.error.message;else loadAcc()}}
-let MAP={id:"",title:"My Game",objs:[]};
+let MAP={id:"",title:"My Game",objs:[],env:{sky:"#87ceeb",g:"#4a4"}};
 const savedMaps=()=>{try{return JSON.parse(localStorage.getItem("bl-maps")||"{}")}catch(e){return{}}};
-function upsertGame(rec){const g={id:rec.id,t:rec.title,by:rec.by||"Player",c:"Custom",d:"A user-made game.",sky:"#87ceeb",g:"#4a4",bl:["#e33","#fc0","#39f"],date:9,play:true,map:rec.map},i=GAMES.findIndex(x=>x.id==rec.id);if(i<0)GAMES.push(g);else GAMES[i]=g}
-async function saveMap(pub){MAP.id=MAP.id||"u-"+Math.random().toString(36).slice(2,9);const rec={id:MAP.id,title:MAP.title,by:PNAME,map:MAP.objs,pub};
+function upsertGame(rec){const g={id:rec.id,t:rec.title,by:rec.by||"Player",c:"Custom",d:"A user-made game.",sky:ENV(rec.map).sky,g:ENV(rec.map).g,bl:["#e33","#fc0","#39f"],date:9,play:true,map:rec.map},i=GAMES.findIndex(x=>x.id==rec.id);if(i<0)GAMES.push(g);else GAMES[i]=g}
+async function saveMap(pub){MAP.id=MAP.id||"u-"+Math.random().toString(36).slice(2,9);const rec={id:MAP.id,title:MAP.title,by:PNAME,map:packMap(),pub};
  try{const L=savedMaps();L[MAP.id]=rec;localStorage.setItem("bl-maps",JSON.stringify(L))}catch(e){}
  let msg=pub?"Published (this browser only; log in to publish online)":"Saved in this browser";
- if(sb&&me){const r=await sb.from("games").upsert({id:MAP.id,owner:me.id,owner_name:me.username,title:MAP.title,data:MAP.objs,published:pub,updated_at:new Date().toISOString()});msg=r.error?r.error.message:(pub?"Published online":"Saved online")}
+ if(sb&&me){const r=await sb.from("games").upsert({id:MAP.id,owner:me.id,owner_name:me.username,title:MAP.title,data:packMap(),published:pub,updated_at:new Date().toISOString()});msg=r.error?r.error.message:(pub?"Published online":"Saved online")}
  if(pub)upsertGame(rec);return msg}
 async function loadUserGames(){Object.values(savedMaps()).forEach(m=>m.pub&&upsertGame(m));
  if(sb){try{const r=await sb.from("games").select("id,title,owner_name,data").eq("published",true).limit(50);(r.data||[]).forEach(x=>upsertGame({id:x.id,title:x.title,by:x.owner_name,map:x.data}))}catch(e){}}
  if(/^#(home|games|game-u-.*)?$/.test(location.hash))route()}
-function editorPage(){const sv=Object.values(savedMaps());return `<div class="box"><h2>Game Creator</h2><div class="in"><div class="tools"><input id="etl" type="text" maxlength="40" value="${MAP.title}"><button class="btn" id="eb">Add Block</button><button class="btn" id="ed">Delete</button><button class="btn" id="en">New</button><select id="eo"><option value="">Open saved...</option>${sv.map(m=>`<option value="${m.id}">${m.title}</option>`).join("")}</select><button class="btn b" id="es">Save</button><button class="btn g" id="ep">Publish</button><button class="btn g" id="et2">Play-test</button><span id="em"></span></div>
- <div class="row" style="gap:6px"><div style="flex:0 0 110px;min-width:90px"><b>Objects</b><div id="ol"></div></div><div id="view" style="flex:1 1 300px;height:420px"></div><div style="flex:0 0 150px;min-width:130px" id="pp"></div></div><p style="color:#666;margin:6px 0 0">Drag to orbit, scroll to zoom, click a block to select it. Blocks start on the baseplate (y=0.5 sits on the ground).</p></div></div>`}
+const TYPES=[["block","Block"],["spawn","Spawn point"],["checkpoint","Checkpoint"],["kill","Kill brick"],["finish","Finish pad"],["bounce","Bounce pad"],["mover","Moving platform"]];
+const TC={kill:"#e22",checkpoint:"#ccc",finish:"#fc0",bounce:"#f4c",spawn:"#3b3"};
+const ENV=m=>(m||[]).find(o=>o.t=="env")||{sky:"#87ceeb",g:"#4a4"};
+const packMap=()=>JSON.parse(JSON.stringify(MAP.objs)).concat([{t:"env",sky:MAP.env.sky,g:MAP.env.g}]);
+const unpack=a=>({objs:JSON.parse(JSON.stringify((a||[]).filter(o=>o.t!="env"))),env:{sky:ENV(a).sky,g:ENV(a).g}});
+function editorPage(){const sv=Object.values(savedMaps());return `<div class="box"><h2>Game Creator</h2><div class="in"><div class="tools"><input id="etl" type="text" maxlength="40" value="${MAP.title}"><button class="btn" id="eu">Undo</button><button class="btn" id="edu">Duplicate</button><button class="btn" id="ed">Delete</button><button class="btn" id="en">New</button><select id="eo"><option value="">Open saved...</option>${sv.map(m=>`<option value="${m.id}">${m.title}</option>`).join("")}</select>Sky <input type="color" id="sk" value="${MAP.env.sky}">Ground <input type="color" id="gc" value="${MAP.env.g}"><button class="btn b" id="es">Save</button><button class="btn g" id="ep">Publish</button><button class="btn g" id="et2">Play-test</button><span id="em"></span></div>
+ <div class="row" style="gap:6px"><div style="flex:0 0 130px;min-width:110px"><b>Add</b>${TYPES.map(([k,n])=>`<button class="btn" data-add="${k}" style="display:block;width:100%;margin:2px 0">+ ${n}</button>`).join("")}<b>Objects</b><div id="ol" style="max-height:200px;overflow:auto"></div></div><div id="view" style="flex:1 1 300px;height:440px"></div><div style="flex:0 0 160px;min-width:140px" id="pp"></div></div>
+ <p style="color:#666;margin:6px 0 0">Click to select, drag to orbit, scroll to zoom. Arrow keys move the selection (Q/E up and down), D duplicates, Delete removes. Moving platforms slide left and right. Touch a Finish pad to win; Checkpoints save your respawn; Kill bricks reset you; Bounce pads launch you.</p></div></div>`}
 function startEditor(){const box=$("#view"),W=()=>box.clientWidth,H=()=>box.clientHeight;
  const r=new THREE.WebGLRenderer({antialias:gfx!="low"});r.setSize(W(),H());box.appendChild(r.domElement);
- const sc=new THREE.Scene();sc.background=new THREE.Color("#87ceeb");sc.add(new THREE.AmbientLight(0xffffff,.7));const L=new THREE.DirectionalLight(0xffffff,.6);L.position.set(20,40,10);sc.add(L);
- const gr=new THREE.Mesh(new THREE.BoxGeometry(100,1,100),new THREE.MeshLambertMaterial({color:"#4a4"}));gr.position.y=-.5;sc.add(gr);
- const cam=new THREE.PerspectiveCamera(60,W()/H(),.1,500),ms=[];let sel=-1,yaw=.6,pit=.6,dist=30;
- function build(pn){ms.forEach(m=>sc.remove(m));ms.length=0;MAP.objs.forEach((o,i)=>{const m=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial({color:o.c}));m.position.set(...o.p);m.scale.set(...o.s);m.rotation.y=o.r;
-  if(i==sel)m.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.04,1.04,1.04)),new THREE.LineBasicMaterial({color:0xffffff})));sc.add(m);ms.push(m)});if(pn)panel()}
- function panel(){$("#ol").innerHTML=MAP.objs.map((o,i)=>`<div class="ob ${i==sel?"on":""}" data-i="${i}">Block ${i+1}</div>`).join("")||"Empty";const o=MAP.objs[sel];
-  $("#pp").innerHTML=o?"<b>Properties</b>"+[["x",o.p,0],["y",o.p,1],["z",o.p,2],["w",o.s,0],["h",o.s,1],["d",o.s,2]].map(([n,a,i])=>`<div class="sw"><label style="width:24px">${n}</label><input type="number" data-a="${n}" value="${a[i]}" style="width:70px"></div>`).join("")+`<div class="sw"><label style="width:24px">rot</label><input type="number" step="15" data-a="r" value="${Math.round(o.r*180/Math.PI)}" style="width:70px"></div><div class="sw"><label style="width:24px">col</label><input type="color" data-a="c" value="${o.c}"></div>`:"Select a block"}
+ const sc=new THREE.Scene();sc.background=new THREE.Color(MAP.env.sky);sc.add(new THREE.AmbientLight(0xffffff,.7));const L=new THREE.DirectionalLight(0xffffff,.6);L.position.set(20,40,10);sc.add(L);
+ const gr=new THREE.Mesh(new THREE.BoxGeometry(100,1,100),new THREE.MeshLambertMaterial({color:MAP.env.g}));gr.position.y=-.5;sc.add(gr);
+ const cam=new THREE.PerspectiveCamera(60,W()/H(),.1,500),ms=[],hist=[];let sel=-1,yaw=.6,pit=.6,dist=30;
+ const snap=()=>{hist.push(JSON.stringify(MAP.objs));if(hist.length>40)hist.shift()};
+ function build(pn){sc.background.set(MAP.env.sky);gr.material.color.set(MAP.env.g);ms.forEach(m=>sc.remove(m));ms.length=0;
+  MAP.objs.forEach((o,i)=>{const t=o.t||"block",m=new THREE.Mesh(new THREE.BoxGeometry(1,1,1),new THREE.MeshLambertMaterial({color:TC[t]||o.c}));m.position.set(...o.p);m.scale.set(o.s[0],t=="spawn"?.3:o.s[1],o.s[2]);m.rotation.y=o.r;
+   if(i==sel)m.add(new THREE.LineSegments(new THREE.EdgesGeometry(new THREE.BoxGeometry(1.04,1.04,1.04)),new THREE.LineBasicMaterial({color:0xffffff})));sc.add(m);ms.push(m)});if(pn)panel()}
+ function panel(){$("#ol").innerHTML=MAP.objs.map((o,i)=>`<div class="ob ${i==sel?"on":""}" data-i="${i}">${i+1}. ${(TYPES.find(t=>t[0]==(o.t||"block"))||[0,"Block"])[1]}</div>`).join("")||"Empty";const o=MAP.objs[sel];
+  const f=(n,v,st)=>`<div class="sw"><label style="width:40px">${n}</label><input type="number" ${st?`step="${st}"`:""} data-a="${n}" value="${v}" style="width:68px"></div>`;
+  $("#pp").innerHTML=o?"<b>Properties</b><div class=\"sw\"><select data-a=\"t\">"+TYPES.map(([k,n])=>`<option value="${k}" ${k==(o.t||"block")?"selected":""}>${n}</option>`).join("")+"</select></div>"+[["x",o.p,0],["y",o.p,1],["z",o.p,2],["w",o.s,0],["h",o.s,1],["d",o.s,2]].map(([n,a,i])=>f(n,a[i])).join("")+f("rot",Math.round(o.r*180/Math.PI),15)+(o.t=="mover"?f("range",o.a||6)+f("speed",o.v||1,.5):"")+`<div class="sw"><label style="width:40px">color</label><input type="color" data-a="c" value="${o.c}"></div>`:"Select a block"}
+ const SZ={block:[4,1,4],spawn:[4,.3,4],checkpoint:[6,1,6],kill:[4,1,4],finish:[8,1,8],bounce:[4,1,4],mover:[5,1,5]};
+ const add=k=>{if(MAP.objs.length>=400)return;snap();const n=MAP.objs.length,o={t:k,p:[(n%6)*6-15,k=="spawn"?.15:.5,Math.floor(n/6)*6],s:[...SZ[k]],r:0,c:["#e33","#fc0","#3b3","#39f","#f80"][n%5]};if(k=="mover"){o.a=6;o.v=1}MAP.objs.push(o);sel=n;build(1)};
+ const dup=()=>{if(sel<0)return;snap();const o=JSON.parse(JSON.stringify(MAP.objs[sel]));o.p[0]+=o.s[0]+1;MAP.objs.push(o);sel=MAP.objs.length-1;build(1)};
+ const del=()=>{if(sel>=0){snap();MAP.objs.splice(sel,1);sel=-1;build(1)}};
+ document.querySelectorAll("[data-add]").forEach(b=>b.onclick=()=>add(b.dataset.add));
  $("#ol").onclick=e=>{const i=e.target.dataset.i;if(i!=null){sel=+i;build(1)}};
+ $("#pp").addEventListener("focusin",snap);
  $("#pp").oninput=e=>{const o=MAP.objs[sel],n=e.target.dataset.a,v=e.target.value;if(!o||!n||v=="")return;
-  if(n=="c")o.c=v;else if(n=="r")o.r=v*Math.PI/180;else if("xyz".includes(n))o.p["xyz".indexOf(n)]=+v;else o.s["whd".indexOf(n)]=Math.max(.5,+v);build(0)};
+  if(n=="t"){o.t=v;if(v=="mover"&&!o.a){o.a=6;o.v=1}build(1);return}
+  if(n=="c")o.c=v;else if(n=="rot")o.r=v*Math.PI/180;else if(n=="range")o.a=Math.max(1,+v);else if(n=="speed")o.v=Math.max(.1,+v);
+  else if("xyz".includes(n))o.p["xyz".indexOf(n)]=+v;else o.s["whd".indexOf(n)]=Math.max(.3,+v);build(0)};
  $("#etl").oninput=e=>MAP.title=e.target.value;
- $("#eb").onclick=()=>{MAP.objs.push({p:[(MAP.objs.length%6)*5-12,.5,0],s:[4,1,4],r:0,c:["#e33","#fc0","#3b3","#39f","#f80"][MAP.objs.length%5]});sel=MAP.objs.length-1;build(1)};
- $("#ed").onclick=()=>{if(sel>=0){MAP.objs.splice(sel,1);sel=-1;build(1)}};
- $("#en").onclick=()=>{MAP={id:"",title:"My Game",objs:[]};sel=-1;$("#etl").value=MAP.title;build(1)};
- $("#eo").onchange=e=>{const m=savedMaps()[e.target.value];if(m){MAP={id:m.id,title:m.title,objs:JSON.parse(JSON.stringify(m.map))};sel=-1;$("#etl").value=MAP.title;build(1)}};
+ $("#sk").oninput=e=>{MAP.env.sky=e.target.value;build(0)};$("#gc").oninput=e=>{MAP.env.g=e.target.value;build(0)};
+ $("#eu").onclick=()=>{if(hist.length){MAP.objs=JSON.parse(hist.pop());sel=-1;build(1)}};
+ $("#edu").onclick=dup;$("#ed").onclick=del;
+ $("#en").onclick=()=>{MAP={id:"",title:"My Game",objs:[],env:{sky:"#87ceeb",g:"#4a4"}};sel=-1;hist.length=0;$("#etl").value=MAP.title;$("#sk").value=MAP.env.sky;$("#gc").value=MAP.env.g;build(1)};
+ $("#eo").onchange=e=>{const m=savedMaps()[e.target.value];if(m){const u=unpack(m.map);MAP={id:m.id,title:m.title,objs:u.objs,env:u.env};sel=-1;hist.length=0;$("#etl").value=MAP.title;$("#sk").value=MAP.env.sky;$("#gc").value=MAP.env.g;build(1)}};
  $("#es").onclick=async()=>{$("#em").textContent=await saveMap(false)};$("#ep").onclick=async()=>{$("#em").textContent=await saveMap(true)};
- $("#et2").onclick=()=>{window.__draft={id:"draft",t:MAP.title+" (draft)",by:PNAME,c:"Custom",d:"Play-test of your unsaved map.",sky:"#87ceeb",g:"#4a4",bl:["#e33"],date:0,play:true,map:JSON.parse(JSON.stringify(MAP.objs))};location.hash="#game-draft"};
+ $("#et2").onclick=()=>{window.__draft={id:"draft",t:MAP.title+" (draft)",by:PNAME,c:"Custom",d:"Play-test of your unsaved map.",sky:MAP.env.sky,g:MAP.env.g,bl:["#e33"],date:0,play:true,map:packMap()};location.hash="#game-draft"};
+ const kd=e=>{if(["INPUT","SELECT"].includes(e.target.tagName)||sel<0)return;const o=MAP.objs[sel],k=e.key;let d=null;
+  if(k=="Delete"||k=="Backspace"){e.preventDefault();del()}else if(k=="d"||k=="D")dup();
+  else if(k=="ArrowLeft")d=[-1,0,0];else if(k=="ArrowRight")d=[1,0,0];else if(k=="ArrowUp")d=[0,0,-1];else if(k=="ArrowDown")d=[0,0,1];else if(k=="q"||k=="Q")d=[0,1,0];else if(k=="e"||k=="E")d=[0,-1,0];
+  if(d){e.preventDefault();snap();o.p=o.p.map((v,i)=>v+d[i]);build(1)}};addEventListener("keydown",kd);
  const cv=r.domElement;let dr=false,mv=0,lx=0,ly=0;
  cv.onmousedown=e=>{dr=true;mv=0;lx=e.clientX;ly=e.clientY};
  const mm=e=>{if(!dr)return;const dx=e.clientX-lx,dy=e.clientY-ly;mv+=Math.abs(dx)+Math.abs(dy);yaw-=dx*.008;pit=Math.max(.05,Math.min(1.5,pit+dy*.006));lx=e.clientX;ly=e.clientY};
  const mu=e=>{if(!dr)return;dr=false;if(mv<5){const b=cv.getBoundingClientRect(),rc=new THREE.Raycaster();rc.setFromCamera({x:(e.clientX-b.left)/b.width*2-1,y:-(e.clientY-b.top)/b.height*2+1},cam);const h=rc.intersectObjects(ms)[0];sel=h?ms.indexOf(h.object):-1;build(1)}};
  cv.onwheel=e=>{e.preventDefault();dist=Math.max(8,Math.min(90,dist+e.deltaY*.04))};addEventListener("mousemove",mm);addEventListener("mouseup",mu);
  let raf;build(1);(function lp(){raf=requestAnimationFrame(lp);cam.position.set(Math.sin(yaw)*Math.cos(pit)*dist,Math.sin(pit)*dist+2,Math.cos(yaw)*Math.cos(pit)*dist);cam.lookAt(0,2,0);r.render(sc,cam)})();
- return{stop(){cancelAnimationFrame(raf);removeEventListener("mousemove",mm);removeEventListener("mouseup",mu);r.dispose();cv.remove()}}}
+ return{stop(){cancelAnimationFrame(raf);removeEventListener("keydown",kd);removeEventListener("mousemove",mm);removeEventListener("mouseup",mu);r.dispose();r.forceContextLoss&&r.forceContextLoss();cv.remove()}}}
+const saveAv=()=>{if(isGuest())return;LOCALAV={...av};try{localStorage.setItem("bl-av",JSON.stringify(av))}catch(e){}};
+const DEFAULT={head:"#f5cd30",torso:"#0d69ac",arms:"#f5cd30",legs:"#a2c429",face:"smile",hat:"none",shirt:"none",acc:"none"},GUEST={head:"#f5cd30",torso:"#eef2f8",arms:"#f5cd30",legs:"#555555",face:"smile",hat:"none",shirt:"guest",acc:"none"},GUESTNAME="Guest "+(1000+Math.floor(Math.random()*9000));
+let LOCALAV={},CLOUDAV=null;try{LOCALAV=JSON.parse(localStorage.getItem("bl-av")||"{}")}catch(e){}
+const isGuest=()=>!!sb&&!me;
+function applyAv(){Object.keys(av).forEach(k=>delete av[k]);Object.assign(av,isGuest()?GUEST:Object.assign({},DEFAULT,me&&CLOUDAV?CLOUDAV:LOCALAV));PNAME=isGuest()?GUESTNAME:me?me.username:"Player"}
+function shirtTex(k){const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d");x.fillStyle=av.torso;x.fillRect(0,0,64,64);x.fillStyle="#fff";
+ if(k=="stripes"){for(let y=8;y<64;y+=16)x.fillRect(0,y,64,8)}
+ else if(k=="cross"){x.fillRect(26,6,12,52);x.fillRect(10,24,44,12)}
+ else if(k=="star"){x.fillStyle="#fc0";x.beginPath();for(let i=0;i<10;i++){const a=i*Math.PI/5-Math.PI/2,q=i%2?9:22;x.lineTo(32+Math.cos(a)*q,32+Math.sin(a)*q)}x.fill()}
+ else if(k=="vest"){x.fillStyle="#222";x.fillRect(0,0,14,64);x.fillRect(50,0,14,64)}
+ else if(k=="guest"){const dr=()=>{x.fillStyle=av.torso;x.fillRect(0,0,64,64);x.textAlign="center";x.textBaseline="middle";x.lineJoin="round";x.strokeStyle="#0066CC";x.fillStyle="#fff";x.font="46px BLB, Impact, sans-serif";x.lineWidth=6;x.strokeText("B",32,26);x.fillText("B",32,26);x.font="9px BLB, Impact, sans-serif";x.lineWidth=3;x.strokeText("BLOCKLAND",32,54);x.fillText("BLOCKLAND",32,54)};dr();const tx=new THREE.CanvasTexture(c);document.fonts&&document.fonts.load("20px BLB").then(()=>{dr();tx.needsUpdate=true}).catch(()=>{});return tx}
+ return new THREE.CanvasTexture(c)}
+const CATALOG={Shirts:[["Classic Blue",{torso:"#0d69ac",shirt:"none"}],["Red Stripes",{torso:"#c33",shirt:"stripes"}],["Star Shirt",{torso:"#2a4fa0",shirt:"star"}],["Green Cross",{torso:"#3a3",shirt:"cross"}],["Black Vest",{torso:"#e8e8e8",shirt:"vest"}],["Plain White",{torso:"#eee",shirt:"none"}]],
+ Pants:[["Lime Green",{legs:"#a2c429"}],["Blue Jeans",{legs:"#2f4f8f"}],["Black Pants",{legs:"#222"}],["Khaki",{legs:"#b8a070"}],["Red Pants",{legs:"#c33"}],["White Pants",{legs:"#eee"}]],
+ Faces:FACES.map(f=>[f[0].toUpperCase()+f.slice(1),{face:f}]),
+ Hats:[["No Hat",{hat:"none"}],["Red Cap",{hat:"cap"}],["Top Hat",{hat:"top"}],["Gold Crown",{hat:"crown"}],["Party Hat",{hat:"party"}]],
+ Accessories:[["None",{acc:"none"}],["Backpack",{acc:"backpack"}],["Red Cape",{acc:"cape"}],["Scarf",{acc:"scarf"}]]};
+function catalogPage(){return `<div class="box"><h2>Catalog</h2><div class="in row"><div style="flex:0 0 150px;min-width:130px"><div class="box" style="margin:0"><h2>Category</h2><div id="ct"></div></div></div><div style="flex:0 0 260px;min-width:240px"><div id="view" style="height:340px"></div><div class="tools" style="margin-top:6px">${["idle","walk","run","jump"].map(s=>`<button class="btn pv" data-s="${s}">${s}</button>`).join("")}</div><p style="color:#666">Everything here is free. Your look saves in this browser. Log in and press Save to account on the Profile page to keep it online.</p></div><div style="flex:1 1 380px"><div class="ann" id="gn" style="display:none;margin:0 0 8px">You are playing as a Guest. <a href="#login">Log in</a> or <a href="#register">register</a> to wear items.</div><div class="grid" id="cg"></div></div></div></div>`}
+function catalogInit(){let tab="Shirts";if(isGuest())$("#gn").style.display="";const tabs=[...Object.keys(CATALOG),"Free"];
+ const draw=()=>{$("#ct").innerHTML=tabs.map(t=>`<button class="btn ${t==tab?"b":""}" data-t="${t}">${t}</button>`).join("");
+  const items=tab=="Free"?Object.entries(CATALOG).flatMap(([c,l])=>l.map(i=>[c,...i])):CATALOG[tab].map(i=>[tab,...i]);
+  $("#cg").innerHTML=items.map(([c,n,st])=>{const on=Object.entries(st).every(([a,b])=>av[a]==b),img=st.face?faceTex(st.face).image.toDataURL():null,col=st.torso||st.legs||"#ccc";
+   return `<a class="card" href="#catalog" data-c="${c}" data-n="${n}" style="${on?"border-color:#0a0;background:#efe":""}"><div class="th" style="height:70px;background:${img?"url("+img+") center/contain no-repeat "+av.head:col}"></div><div class="t">${n}</div><small>${c} - Free${on?" - Worn":""}</small></a>`}).join("")};
+ draw();
+ $("#ct").onclick=e=>{if(e.target.dataset.t){tab=e.target.dataset.t;draw()}};
+ $("#cg").onclick=e=>{const a=e.target.closest(".card");if(!a)return;e.preventDefault();if(isGuest()){$("#gn").style.display="";return}const it=CATALOG[a.dataset.c].find(i=>i[0]==a.dataset.n);Object.assign(av,it[1]);saveAv();eng.refresh();draw()};
+ document.querySelectorAll(".pv").forEach(b=>b.onclick=()=>window.__pv=b.dataset.s)}
+const FCATS=["General","Game Help","Creations","Off-Topic"];let FCAT="All";
+const esc=t=>String(t).replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const ago=d=>{const m=Math.floor((Date.now()-new Date(d))/60000);return m<1?"just now":m<60?m+" min ago":m<1440?Math.floor(m/60)+" h ago":Math.floor(m/1440)+" d ago"};
+async function forumList(){const p=$("#page");
+ if(!sb){p.innerHTML='<div class="box"><h2>Forum</h2><div class="in">The forum needs online accounts. Add your Supabase keys and run schema.sql to turn it on.</div></div>';return}
+ p.innerHTML='<div class="box"><h2>Forum</h2><div class="in">Loading...</div></div>';
+ let q=sb.from("forum_threads").select("id,category,title,author_name,last_post,replies").order("last_post",{ascending:false}).limit(50);if(FCAT!="All")q=q.eq("category",FCAT);
+ const r=await q;if(location.hash!="#forum")return;
+ if(r.error){p.innerHTML='<div class="box"><h2>Forum</h2><div class="in">Could not load the forum: '+esc(r.error.message)+'</div></div>';return}
+ p.innerHTML=`<div class="row2"><div class="side"><div class="box"><h2>Categories</h2><div id="fc">${["All",...FCATS].map(c=>`<div class="ob ${c==FCAT?"on":""}" data-c="${c}">${c}</div>`).join("")}</div></div></div><div class="main"><div class="box"><h2>${FCAT} Discussions</h2><div class="in">
+ <table class="ft"><tr><th>Topic</th><th>Replies</th><th>Last post</th></tr>${(r.data||[]).map(t=>`<tr><td><a href="#thread-${t.id}">${esc(t.title)}</a><br><small>${esc(t.category)} - by ${esc(t.author_name)}</small></td><td>${t.replies}</td><td>${ago(t.last_post)}</td></tr>`).join("")||'<tr><td colspan="3">No topics yet. Start one!</td></tr>'}</table></div></div>
+ <div class="box"><h2>New Topic</h2><div class="in">${me?`<div class="sw"><label style="width:70px">Category</label><select id="nc">${FCATS.map(c=>`<option>${c}</option>`).join("")}</select></div><div class="sw"><label style="width:70px">Title</label><input id="nt" type="text" maxlength="100" style="width:70%"></div><textarea id="nb" maxlength="5000" rows="5" style="width:100%"></textarea><br><button class="btn g" id="np">Post Topic</button> <span id="nm" style="color:#c00"></span>`:'<a href="#login">Log in</a> to post a topic.'}</div></div></div></div>`;
+ $("#fc").onclick=e=>{if(e.target.dataset.c){FCAT=e.target.dataset.c;forumList()}};
+ const np=$("#np");if(np)np.onclick=async()=>{const t=$("#nt").value.trim(),b=$("#nb").value.trim();if(t.length<3||!b){$("#nm").textContent="Add a title (3+ characters) and a message.";return}
+  const w=await sb.from("forum_threads").insert({category:$("#nc").value,title:t,body:b,author:me.id}).select("id").single();
+  if(w.error)$("#nm").textContent=w.error.message;else location.hash="#thread-"+w.data.id}}
+async function forumThread(id){const p=$("#page");if(!sb||!/^\d+$/.test(id)){location.hash="#forum";return}
+ p.innerHTML='<div class="box"><h2>Topic</h2><div class="in">Loading...</div></div>';
+ const [t,ps]=await Promise.all([sb.from("forum_threads").select("*").eq("id",id).maybeSingle(),sb.from("forum_posts").select("*").eq("thread_id",id).order("created_at").limit(200)]);
+ if(location.hash!="#thread-"+id)return;
+ if(!t.data){p.innerHTML='<div class="box"><h2>Topic</h2><div class="in">Topic not found. <a href="#forum">Back to the forum</a></div></div>';return}
+ const post=(n,b,d)=>`<div class="fp"><div class="fa"><b>${esc(n)}</b><br><small>${ago(d)}</small></div><div class="fb">${esc(b).replace(/\n/g,"<br>")}</div></div>`;
+ p.innerHTML=`<div class="box"><h2><a href="#forum" style="float:right">Back to forum</a>${esc(t.data.title)}</h2><div class="in">${post(t.data.author_name,t.data.body,t.data.created_at)}${(ps.data||[]).map(x=>post(x.author_name,x.body,x.created_at)).join("")}
+ ${me?`<textarea id="rb" maxlength="5000" rows="4" style="width:100%" placeholder="Write a reply"></textarea><br><button class="btn g" id="rp2">Reply</button> <span id="rm" style="color:#c00"></span>`:'<a href="#login">Log in</a> to reply.'}</div></div>`;
+ const rb=$("#rp2");if(rb)rb.onclick=async()=>{const b=$("#rb").value.trim();if(!b)return;const w=await sb.from("forum_posts").insert({thread_id:+id,body:b,author:me.id});if(w.error)$("#rm").textContent=w.error.message;else forumThread(id)}}
 function startNet(g){if(!WS_URL||NET)return;let ws;try{ws=new WebSocket(WS_URL)}catch(e){return}
  const P={},say=m=>window.__say&&window.__say("",m);let myId=0,acc=0;NET={ws};
  const list=()=>{const e=$("#pl");if(e)e.innerHTML="<b>Players</b><div>"+PNAME+" (you)</div>"+Object.values(P).map(p=>"<div>"+p.n+"</div>").join("")};
@@ -317,7 +422,7 @@ function startNet(g){if(!WS_URL||NET)return;let ws;try{ws=new WebSocket(WS_URL)}
  ws.onmessage=ev=>{let m;try{m=JSON.parse(ev.data)}catch(e){return}
   if(m.t=="hello")myId=m.id;
   else if(m.t=="join"&&m.id!=myId&&eng){const sv={...av};Object.assign(av,m.a||{});const c=buildChar();Object.assign(av,sv);
-   const cv=document.createElement("canvas");cv.width=256;cv.height=48;const x=cv.getContext("2d");x.font="bold 30px Arial";x.textAlign="center";x.lineWidth=5;x.strokeStyle="#000";x.fillStyle="#fff";x.strokeText(m.n,128,34);x.fillText(m.n,128,34);
+   const cv=document.createElement("canvas");cv.width=256;cv.height=48;const x=cv.getContext("2d");x.font="bold 30px 'Comic Sans MS',cursive";x.textAlign="center";x.lineWidth=5;x.strokeStyle="#000";x.fillStyle="#fff";x.strokeText(m.n,128,34);x.fillText(m.n,128,34);
    const sp=new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(cv),depthTest:false}));sp.scale.set(8,1.5,1);sp.position.y=6.5;c.add(sp);eng.sc.add(c);P[m.id]={n:m.n,c,x:0,y:5,z:0,r:0,s:"idle"};list();say(m.n+" joined.")}
   else if(m.t=="leave"&&P[m.id]){P[m.id].c.parent&&P[m.id].c.parent.remove(P[m.id].c);say(P[m.id].n+" left.");delete P[m.id];list()}
   else if(m.t=="chat"&&window.__say)window.__say(m.n,m.m);
@@ -326,7 +431,7 @@ function startNet(g){if(!WS_URL||NET)return;let ws;try{ws=new WebSocket(WS_URL)}
   const k=Math.min(1,dt*10),now=performance.now()/1000;for(const p of Object.values(P)){const c=p.c;c.position.x+=(p.x-c.position.x)*k;c.position.y+=(p.y-c.position.y)*k;c.position.z+=(p.z-c.position.z)*k;let d=p.r-c.rotation.y;d=Math.atan2(Math.sin(d),Math.cos(d));c.rotation.y+=d*k;animate(c,now,p.s,0)}}}
 function initUI(g){const v=$("#view"),menu=$("#menu"),cl=$("#cl"),ci=$("#ci");
  const say=(n,m)=>{const d=document.createElement("div");d.textContent=(n?n+": ":"")+m;cl.appendChild(d);while(cl.children.length>40)cl.firstChild.remove();cl.scrollTop=1e9};
- say("","Chat is local to this tab until multiplayer arrives (Phase 8).");
+ say("","Chat stays in this tab until you join an online server.");
  $("#pl").innerHTML="<b>Players</b><div>"+PNAME+" (you)</div>"+(g.c=="Combat"?[1,2,3].map(i=>"<div>Bot "+i+" (AI)</div>").join(""):"");
  const tl=g.c=="Building"||g.c=="Baseplate"?["#e33","#fc0","#3b3","#39f","#fff"]:g.c=="Combat"?["Sword"]:["Hands"],isC=t=>t&&t[0]=="#";
  $("#hb").innerHTML=[0,1,2,3,4].map(i=>`<span data-i="${i}" class="${i==0?"sel":""}" style="${isC(tl[i])?"background:"+tl[i]:""}">${tl[i]&&!isC(tl[i])?tl[i]:isC(tl[i])?"":""}</span>`).join("");
@@ -334,7 +439,8 @@ function initUI(g){const v=$("#view"),menu=$("#menu"),cl=$("#cl"),ci=$("#ci");
  $("#hb").onclick=e=>{const i=e.target.dataset.i;if(i!=null)sel(+i)};
  const toggle=()=>{const o=menu.style.display=="none";menu.style.display=o?"flex":"none";$("#g2").value=gfx;$("#sn").value=SENS};
  const lock=()=>{const c=v.querySelector("canvas");if(c&&c.requestPointerLock)c.requestPointerLock();else say("","Press Play first.")};
- $("#mb").onclick=toggle;$("#m1").onclick=toggle;$("#m2").onclick=()=>{eng&&eng.respawn();toggle()};$("#m3").onclick=()=>{toggle();lock()};$("#lk").onclick=lock;
+ $("#mb").onclick=toggle;$("#m1").onclick=toggle;$("#m2").onclick=()=>{eng&&eng.respawn();toggle()};$("#m3").onclick=()=>{toggle();lock()};$("#m4").onclick=()=>{toggle();v.requestFullscreen&&v.requestFullscreen()};
+ document.querySelectorAll(".mtab").forEach(b=>b.onclick=()=>{document.querySelectorAll(".mtab").forEach(x=>x.classList.toggle("b",x==b));$("#mtS").style.display=b.dataset.p=="mtS"?"":"none";$("#mtH").style.display=b.dataset.p=="mtH"?"":"none"});$("#lk").onclick=lock;
  $("#sn").oninput=e=>SENS=+e.target.value;
  $("#g2").onchange=e=>{gfx=e.target.value;$("#gx").value=gfx;if(eng){eng.stop();eng=null;launch(g)}};
  $("#sg").onchange=e=>location.hash="#game-"+e.target.value;
@@ -348,6 +454,33 @@ addEventListener("keydown",e=>{const u=window.__ui;if(!u)return;
  else if(document.activeElement.tagName!="INPUT"&&e.code>="Digit1"&&e.code<="Digit5")u.sel(+e.code[5]-1)});
 addEventListener("hashchange",route);
 $("#qb").onclick=()=>{window.__q=$("#q").value;location.hash="#games";route()};
-$("#q").onkeydown=e=>{if(e.key=="Enter")$("#qb").click()};paintAcct();initAuth();loadUserGames();
+$("#q").onkeydown=e=>{if(e.key=="Enter")$("#qb").click()};applyAv();paintAcct();initAuth();loadUserGames();
 route();
-</script></body></html>
+</script><script>
+(function(){if(!(matchMedia("(pointer:coarse)").matches||"ontouchstart" in window))return;document.documentElement.classList.add("touch");
+ const key=(c,d)=>dispatchEvent(new KeyboardEvent(d?"keydown":"keyup",{code:c,key:c}));
+ function mount(){const v=document.getElementById("view");if(!v||!document.getElementById("hb")||v.querySelector(".tc"))return;
+  const h=location.hash,sw=/sword/.test(h),bld=/baseplate|sandbox/.test(h),g=document.createElement("div");g.className="tc";
+  let b='<div class="js"><i></i></div><div class="tb" data-k="Space" style="right:14px;bottom:100px">Jump</div><div class="tb" data-t="1" style="right:82px;bottom:92px">Run</div><div class="tb" data-r="1" style="right:14px;bottom:168px">Respawn</div>';
+  if(sw)b+='<div class="tb" data-k="KeyF" style="right:82px;bottom:160px">Swing</div>';
+  if(bld)b+='<div class="tb" data-k="KeyE" style="right:82px;bottom:160px">Place</div><div class="tb" data-k="KeyQ" style="right:150px;bottom:132px">Remove</div>';
+  g.innerHTML=b;v.appendChild(g);
+  const js=g.querySelector(".js"),kn=js.firstChild,on={};let jid=null,cx=0,cy=0;
+  const set=(c,d)=>{if(!!on[c]!==d){on[c]=d;key(c,d)}};
+  const upd=t=>{const dx=t.clientX-cx,dy=t.clientY-cy,m=Math.hypot(dx,dy)||1,k=Math.min(m,40);kn.style.transform="translate("+dx/m*k+"px,"+dy/m*k+"px)";set("KeyW",dy<-14);set("KeyS",dy>14);set("KeyA",dx<-14);set("KeyD",dx>14)};
+  js.addEventListener("touchstart",e=>{e.preventDefault();const t=e.changedTouches[0];jid=t.identifier;const r=js.getBoundingClientRect();cx=r.left+r.width/2;cy=r.top+r.height/2;upd(t)},{passive:false});
+  js.addEventListener("touchmove",e=>{e.preventDefault();for(const t of e.changedTouches)if(t.identifier==jid)upd(t)},{passive:false});
+  const end=e=>{for(const t of e.changedTouches)if(t.identifier==jid){jid=null;kn.style.transform="";["KeyW","KeyA","KeyS","KeyD"].forEach(c=>set(c,false))}};js.addEventListener("touchend",end);js.addEventListener("touchcancel",end);
+  g.querySelectorAll(".tb").forEach(el=>{el.addEventListener("touchstart",e=>{e.preventDefault();
+    if(el.dataset.k)set(el.dataset.k,true);else if(el.dataset.t){set("ShiftLeft",!on.ShiftLeft);el.style.background=on.ShiftLeft?"#c60a":""}else if(el.dataset.r&&eng)eng.respawn()},{passive:false});
+   el.addEventListener("touchend",e=>{if(el.dataset.k)set(el.dataset.k,false)});el.addEventListener("touchcancel",()=>{if(el.dataset.k)set(el.dataset.k,false)})});
+  let lid=null,lx=0,ly=0;
+  v.addEventListener("touchstart",e=>{const t=e.changedTouches[0];if(lid===null&&e.target.tagName=="CANVAS"){lid=t.identifier;lx=t.clientX;ly=t.clientY}},{passive:true});
+  v.addEventListener("touchmove",e=>{for(const t of e.changedTouches)if(t.identifier===lid){e.preventDefault();if(eng&&eng.look)eng.look(t.clientX-lx,t.clientY-ly);lx=t.clientX;ly=t.clientY}},{passive:false});
+  const le=e=>{for(const t of e.changedTouches)if(t.identifier===lid)lid=null};v.addEventListener("touchend",le);v.addEventListener("touchcancel",le)}
+ new MutationObserver(mount).observe(document.getElementById("page"),{childList:true,subtree:true});mount()})();
+</script>
+<script>
+document.fonts&&document.fonts.load("32px BLB").then(()=>{const c=document.createElement("canvas");c.width=c.height=64;const x=c.getContext("2d");x.font="62px BLB";x.textAlign="center";x.textBaseline="middle";x.lineJoin="round";x.lineWidth=8;x.strokeStyle="#0066CC";x.fillStyle="#fff";x.strokeText("B",32,36);x.fillText("B",32,36);const l=document.querySelector("link[rel=icon]");if(l)l.href=c.toDataURL()}).catch(()=>{});
+</script>
+</body></html>

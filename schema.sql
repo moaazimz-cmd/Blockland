@@ -52,3 +52,65 @@ end $$;
 
 create trigger on_auth_user_created after insert on auth.users
 for each row execute function public.handle_new_user();
+
+-- Phase 7: user-created games
+create table public.games (
+  id text primary key,
+  owner uuid not null references public.profiles(id) on delete cascade,
+  owner_name text not null,
+  title text not null check (char_length(title) between 1 and 40),
+  data jsonb not null,
+  published boolean not null default false,
+  updated_at timestamptz not null default now()
+);
+alter table public.games enable row level security;
+create policy "games readable" on public.games for select using (published or auth.uid() = owner);
+create policy "games insert own" on public.games for insert with check (auth.uid() = owner);
+create policy "games update own" on public.games for update using (auth.uid() = owner) with check (auth.uid() = owner);
+create policy "games delete own" on public.games for delete using (auth.uid() = owner);
+
+-- Forum
+create table public.forum_threads (
+  id bigint generated always as identity primary key,
+  category text not null check (category in ('General','Game Help','Creations','Off-Topic')),
+  title text not null check (char_length(title) between 3 and 100),
+  body text not null check (char_length(body) between 1 and 5000),
+  author uuid not null references public.profiles(id) on delete cascade,
+  author_name text not null default '',
+  created_at timestamptz not null default now(),
+  last_post timestamptz not null default now(),
+  replies int not null default 0
+);
+create table public.forum_posts (
+  id bigint generated always as identity primary key,
+  thread_id bigint not null references public.forum_threads(id) on delete cascade,
+  body text not null check (char_length(body) between 1 and 5000),
+  author uuid not null references public.profiles(id) on delete cascade,
+  author_name text not null default '',
+  created_at timestamptz not null default now()
+);
+alter table public.forum_threads enable row level security;
+alter table public.forum_posts enable row level security;
+create policy "threads readable" on public.forum_threads for select using (true);
+create policy "threads insert own" on public.forum_threads for insert with check (auth.uid() = author);
+create policy "threads delete own" on public.forum_threads for delete using (auth.uid() = author);
+create policy "posts readable" on public.forum_posts for select using (true);
+create policy "posts insert own" on public.forum_posts for insert with check (auth.uid() = author);
+create policy "posts delete own" on public.forum_posts for delete using (auth.uid() = author);
+
+-- The server fills in the author name so nobody can post under someone else's name.
+create function public.forum_set_author() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  new.author_name := (select username from public.profiles where id = new.author);
+  return new;
+end $$;
+create trigger threads_author before insert on public.forum_threads for each row execute function public.forum_set_author();
+create trigger posts_author before insert on public.forum_posts for each row execute function public.forum_set_author();
+
+-- Keep reply counts and "last post" times up to date.
+create function public.forum_bump() returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  update public.forum_threads set replies = replies + 1, last_post = now() where id = new.thread_id;
+  return new;
+end $$;
+create trigger posts_bump after insert on public.forum_posts for each row execute function public.forum_bump();
